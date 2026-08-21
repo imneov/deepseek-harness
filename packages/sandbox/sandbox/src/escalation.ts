@@ -1,7 +1,7 @@
 /**
  * The escalation vocabulary and choreography shared by every sandbox-enforcing
  * tool family (`@deepseek-ai/dsh-tool-bash`, `@deepseek-ai/dsh-tool-fs`): the
- * strictly-wider ladder, the argument-pairing validation, the model-facing
+ * permission ladder, the argument-pairing validation, the model-facing
  * denial/hint markers, and {@link approveEscalation} — the ordered fail-closed
  * sequence that resolves a `sandbox_permissions` request through a
  * user-approval channel BEFORE anything executes. One home keeps the two
@@ -28,6 +28,12 @@ import type { SandboxMode } from './index.ts'
 export const WIDER_MODES: Record<string, readonly SandboxMode[]> = {
   'read-only': ['workspace-write', 'danger-full-access'],
   'workspace-write': ['danger-full-access'],
+}
+
+const MODE_RANK: Record<SandboxMode, number> = {
+  'read-only': 0,
+  'workspace-write': 1,
+  'danger-full-access': 2,
 }
 
 /**
@@ -141,21 +147,25 @@ export interface EscalationRequest {
 }
 
 /**
- * Resolve a sandbox-escalation request BEFORE anything executes: check strict
- * widening against the call's effective mode, then resolve the approval
- * channel, then map every outcome — the ordered fail-closed sequence both
- * enforcing families share. Returns the granted mode to stamp onto exactly
- * this call; throws the distinct verbatim text for every other path (a
- * non-widening request, a missing approval service, an agent-less execution,
- * a rejection, a cancellation, an unanswerable ask) — the tool registry turns
- * the throw into the call's isError result, and nothing has run. A
- * non-widening request never prompts a human.
+ * Resolve a sandbox-escalation request BEFORE anything executes. Requests at
+ * or below the call's effective mode are idempotent and reuse that standing
+ * mode without approval; only a strict widening reaches the approval channel.
+ * Then map every outcome through the ordered fail-closed sequence both
+ * enforcing families share. Returns the mode to stamp onto exactly this call;
+ * throws the distinct verbatim text for every other path (a missing approval
+ * service, an agent-less execution, a rejection, a cancellation, or an
+ * unanswerable ask) — the tool registry turns the throw into the call's isError
+ * result, and nothing has run. A non-widening request never prompts a human and
+ * never lowers the call.
  * @param request - the escalation to judge (see {@link EscalationRequest}).
  * @param approval - the approval ingredients the tool holds (see {@link EscalationApproval}).
  * @returns the granted mode, consumed by the one call that asked.
  */
 export async function approveEscalation<A, C>(request: EscalationRequest, approval: EscalationApproval<A, C>): Promise<SandboxMode> {
   const { requestedMode: mode, effectiveMode, justification, subject } = request
+  if (mode in MODE_RANK && MODE_RANK[mode as SandboxMode] <= MODE_RANK[effectiveMode]) {
+    return effectiveMode
+  }
   // Strict widening is an EXECUTION check against the call's effective mode —
   // deliberately not a schema constraint (the enum is the closed target
   // vocabulary; the effective mode is per-call truth).
