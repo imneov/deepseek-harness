@@ -1,6 +1,9 @@
 /** Browser launch-token and persistent-cookie behavior. */
 
 import { createHmac } from 'node:crypto'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import { BrowserAuth } from '../src/browser-auth.ts'
@@ -86,8 +89,15 @@ function exchange(
   return { cookie: setCookie.split(';', 1)[0]!, launchUrl, state: res.state }
 }
 
+function passwordFile(content: string): string {
+  const path = join(mkdtempSync(join(tmpdir(), 'dsh-web-password-')), 'password')
+  writeFileSync(path, content)
+  return path
+}
+
 afterEach(() => {
   vi.useRealTimers()
+  vi.unstubAllEnvs()
 })
 
 describe('BrowserAuth', () => {
@@ -248,6 +258,36 @@ describe('BrowserAuth', () => {
     expect(reactivated.isAuthenticated(request('/', '127.0.0.1:3080', { cookie: first.cookie }))).toBe(false)
     expect(reactivated.isAuthenticated(request('/', '127.0.0.1:3080', { cookie: second.cookie }))).toBe(true)
     expect(store).toMatchObject({ reads: 0, modifies: 2 })
+  })
+
+  it('uses the DSH_WEB_PASSWORD_FILE password as a fixed login and serves a login page', async () => {
+    vi.stubEnv('DSH_WEB_PASSWORD_FILE', passwordFile('s3cret pass\n'))
+    const store = new RecordCredentials()
+    const auth = await createAuth(store)
+    expect(auth.authenticatedUrl('http://127.0.0.1:3080')).toBe('http://127.0.0.1:3080/')
+
+    const login = response()
+    expect(auth.authorizeIndex(request('/?token=s3cret%20pass'), login.value)).toBe(false)
+    expect(login.state.status).toBe(303)
+    const setCookie = login.state.headers?.['set-cookie']
+    if (setCookie === undefined) throw new Error('password exchange did not set a cookie')
+    const restarted = await createAuth(store)
+    expect(restarted.isAuthenticated(request('/', '127.0.0.1:3080', { cookie: setCookie.split(';', 1)[0]! })))
+      .toBe(true)
+
+    for (const candidate of [request('/'), request('/?token=wrong'), request('/', '127.0.0.1:3080', { method: 'HEAD' })]) {
+      const denied = response()
+      expect(auth.authorizeIndex(candidate, denied.value)).toBe(false)
+      expect(denied.state.status).toBe(401)
+      expect(denied.state.headers?.['content-type']).toBe('text/html; charset=utf-8')
+      if (candidate.method === 'HEAD') expect(denied.state.body).toBeUndefined()
+      else expect(denied.state.body).toContain('type="password"')
+    }
+  })
+
+  it('fails loud on an empty DSH_WEB_PASSWORD_FILE', async () => {
+    vi.stubEnv('DSH_WEB_PASSWORD_FILE', passwordFile('\n'))
+    await expect(createAuth(new RecordCredentials())).rejects.toThrow(/is empty/u)
   })
 
   it('fails loud on an invalid owner record instead of replacing it', async () => {

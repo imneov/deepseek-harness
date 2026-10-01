@@ -1,6 +1,7 @@
 /** Browser-session authentication for the Host Connection carrier. */
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { credentialKey } from '@deepseek-ai/dsh-credentials'
 import type { CredentialProvider, CredentialRecord } from '@deepseek-ai/dsh-credentials'
 import type {
@@ -18,6 +19,35 @@ const COOKIE_PAYLOAD_VERSION = 1
 const STORED_SECRET_VERSION = 1
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]*$/
 const PROCESS_LAUNCH_TOKENS = new WeakMap<object, string>()
+const PASSWORD_FILE_ENV = 'DSH_WEB_PASSWORD_FILE'
+const LOGIN_PAGE = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DeepSeek Harness</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f5f5f7;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1d1d1f}
+form{width:300px;padding:28px;background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h1{margin:0 0 20px;font-size:20px;font-weight:600;letter-spacing:-.02em}
+input,button{box-sizing:border-box;width:100%;height:40px;border-radius:8px;font:inherit}
+input{padding:0 12px;border:1px solid #d2d2d7}
+button{margin-top:12px;border:0;background:#0071e3;color:#fff;cursor:pointer}
+p{min-height:1em;margin:10px 0 0;color:#d70015;font-size:13px}
+</style></head><body>
+<form id="login"><h1>DeepSeek Harness</h1>
+<input name="username" value="dsh" autocomplete="username" hidden>
+<input name="password" type="password" placeholder="Password" autocomplete="current-password" autofocus required>
+<button>Sign in</button><p id="error"></p></form>
+<script>
+const form = document.getElementById('login')
+form.addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const res = await fetch('./?token=' + encodeURIComponent(form.password.value), {
+    cache: 'no-store', credentials: 'same-origin', redirect: 'manual',
+  })
+  if (res.type === 'opaqueredirect') location.replace('./')
+  else document.getElementById('error').textContent = 'Incorrect password'
+})
+</script></body></html>
+`
 
 interface StoredSecretPayload {
   readonly version: typeof STORED_SECRET_VERSION
@@ -55,6 +85,18 @@ function processLaunchToken(owner: object): string {
   const created = encodeBase64Url(randomBytes(SECRET_BYTES))
   PROCESS_LAUNCH_TOKENS.set(owner, created)
   return created
+}
+
+/**
+ * Fixed login password read from the file named by DSH_WEB_PASSWORD_FILE.
+ * @returns undefined when the variable is unset; an unreadable or empty file throws.
+ */
+function configuredPassword(): string | undefined {
+  const path = process.env[PASSWORD_FILE_ENV]
+  if (path === undefined || path === '') return undefined
+  const password = readFileSync(path, 'utf8').trim()
+  if (password === '') throw new Error(`client-connection: ${PASSWORD_FILE_ENV} file ${path} is empty`)
+  return password
 }
 
 function header(
@@ -180,7 +222,9 @@ async function initializeSecret(credentials: CredentialProvider): Promise<Buffer
 /**
  * Process launch-token exchange and persistent signed-cookie verification.
  * Connection loads the credential provider's signing secret during activation
- * and retains it for synchronous request authentication.
+ * and retains it for synchronous request authentication. When
+ * DSH_WEB_PASSWORD_FILE is set, its fixed password replaces the random launch
+ * token and unauthenticated index requests receive a password login page.
  */
 export class BrowserAuth {
   private readonly launchToken: string
@@ -190,8 +234,9 @@ export class BrowserAuth {
     processOwner: object,
     private readonly secret: Buffer,
     maxAgeDays: number,
+    private readonly password: string | undefined,
   ) {
-    this.launchToken = processLaunchToken(processOwner)
+    this.launchToken = password ?? processLaunchToken(processOwner)
     this.maxAgeMilliseconds = maxAgeDays * DAY_MILLISECONDS
     if (!Number.isSafeInteger(this.maxAgeMilliseconds)
       || !Number.isSafeInteger(Date.now() + this.maxAgeMilliseconds)) {
@@ -212,16 +257,18 @@ export class BrowserAuth {
     credentials: CredentialProvider,
     maxAgeDays: number,
   ): Promise<BrowserAuth> {
-    return new BrowserAuth(processOwner, await initializeSecret(credentials), maxAgeDays)
+    return new BrowserAuth(processOwner, await initializeSecret(credentials), maxAgeDays, configuredPassword())
   }
 
   /**
    * Add this process's launch token to the caller's application URL.
    * @param baseUrl - clean browser URL whose authority and mount are preserved.
-   * @returns the same URL carrying the process token as its sole authentication input.
+   * @returns the same URL carrying the process token as its sole authentication input;
+   * in password mode the clean URL, so the password never reaches logs or browser history.
    */
   authenticatedUrl(baseUrl: string): string {
     const url = new URL(baseUrl)
+    if (this.password !== undefined) return url.href
     url.searchParams.set(TOKEN_QUERY, this.launchToken)
     return url.href
   }
@@ -300,6 +347,15 @@ export class BrowserAuth {
   }
 
   private writeUnauthorized(req: ConnectionIndexRequest, res: ConnectionIndexResponse): void {
+    if (this.password !== undefined) {
+      res.writeHead(401, {
+        'cache-control': 'no-store',
+        'content-type': 'text/html; charset=utf-8',
+        'referrer-policy': 'no-referrer',
+      })
+      res.end(req.method === 'HEAD' ? undefined : LOGIN_PAGE)
+      return
+    }
     res.writeHead(401, {
       'cache-control': 'no-store',
       'content-type': 'text/plain; charset=utf-8',
