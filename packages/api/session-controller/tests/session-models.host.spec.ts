@@ -157,6 +157,122 @@ function currentSelection(ctx: Context, sessionId: SessionId) {
 }
 
 describe('Web session model selection', () => {
+  it('selects a concrete Session-local route and effort without saving the default', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    onTestFinished(() => ctx.fiber.dispose())
+    ctx.llm.registerAdapter(['local-route'], new CatalogAdapter('Local Route', [
+      { provider: 'local-route', id: 'local-model', name: 'Local Model' },
+    ], { efforts: [{ id: ReasoningEffortId('medium'), name: 'Medium' }] }))
+    let stored: { provider: string; model: string; reasoningEffort?: ReasoningEffortId } = {
+      provider: 'deepseek-official', model: 'deepseek-chat',
+    }
+    const save = vi.fn((selection: typeof stored) => { stored = selection })
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => stored, saveDefaultModelSelection: save, cwd: '/tmp',
+    })
+    const selected = { provider: 'local-route', model: 'local-model', reasoningEffort: 'medium' }
+
+    await expect(controller.selectLocalModel({ sessionId, ...selected })).resolves.toEqual({ selected })
+    expect(currentSelection(ctx, sessionId)).toEqual(selected)
+    expect((await ctx.systemPrompt.assemble()).variables)
+      .toMatchObject({ provider: 'local-route', model: 'local-model' })
+    await expect(agentEvents(ctx, agent).waterfall(
+      'agent/request', { turn: 1, step: 0, signal: new AbortController().signal },
+      () => Promise.resolve({ provider: 'seed', model: 'seed' }),
+    )).resolves.toMatchObject(selected)
+    expect(save).not.toHaveBeenCalled()
+    expect(ctx.agentDefaultModel.currentSelection())
+      .toEqual({ provider: 'deepseek-official', model: 'deepseek-chat' })
+  })
+
+  it('keeps selectModel saving the accepted selection through the public Host API', async () => {
+    const { ctx, sessionId } = await harness()
+    onTestFinished(() => ctx.fiber.dispose())
+    let stored: { provider: string; model: string; reasoningEffort?: ReasoningEffortId } = {
+      provider: 'deepseek-official', model: 'deepseek-chat',
+    }
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => stored,
+      saveDefaultModelSelection: (selection) => { stored = selection }, cwd: '/tmp',
+    })
+    const save = vi.spyOn(ctx.agentDefaultModel, 'saveSelection')
+    const selected = { provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max' }
+
+    await expect(controller.selectModel({ sessionId, ...selected })).resolves.toEqual({ selected })
+    expect(save).toHaveBeenCalledExactlyOnceWith(selected)
+    expect(ctx.agentDefaultModel.currentSelection()).toEqual(selected)
+    expect(currentSelection(ctx, sessionId)).toEqual(selected)
+  })
+
+  it.each(['selectLocalModel', 'selectModel'] as const)(
+    '%s rejects unavailable models and unsupported efforts without saving or changing selection',
+    async (method) => {
+      const { ctx, sessionId } = await harness()
+      onTestFinished(() => ctx.fiber.dispose())
+      const controller = createSessionTestController(ctx, {
+        defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }), cwd: '/tmp',
+      })
+      const save = vi.spyOn(ctx.agentDefaultModel, 'saveSelection')
+      const selected = { provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max' }
+      await controller.selectLocalModel({ sessionId, ...selected })
+      for (const denied of [
+        { provider: 'missing', model: 'model' },
+        { provider: 'deepseek-official', model: 'unlisted' },
+        { provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'medium' },
+      ]) {
+        await expect(controller[method]({ sessionId, ...denied }))
+          .rejects.toMatchObject({ code: 'session/model-unavailable' })
+        expect(currentSelection(ctx, sessionId)).toEqual(selected)
+        expect(save).not.toHaveBeenCalled()
+        expect(ctx.agentDefaultModel.currentSelection())
+          .toEqual({ provider: 'deepseek-official', model: 'deepseek-chat' })
+      }
+    },
+  )
+
+  it('keeps an in-flight prompt assembly and request on its captured local selection', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<undefined>()
+    const assemblies: ReturnType<typeof ctx.systemPrompt.assemble>[] = []
+    onTestFinished(async () => {
+      release.resolve(undefined)
+      await Promise.allSettled(assemblies)
+      await ctx.fiber.dispose()
+    })
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }), cwd: '/tmp',
+    })
+    const save = vi.spyOn(ctx.agentDefaultModel, 'saveSelection')
+    const first = { provider: 'deepseek-official', model: 'deepseek-chat', reasoningEffort: 'high' }
+    const second = { provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max' }
+    await controller.selectLocalModel({ sessionId, ...first })
+    const dispose = ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
+      entered.resolve(undefined)
+      await release.promise
+      return next()
+    })
+    const assembly = ctx.systemPrompt.assemble()
+    assemblies.push(assembly)
+    await entered.promise
+    await controller.selectLocalModel({ sessionId, ...second })
+    expect(currentSelection(ctx, sessionId)).toEqual(second)
+    release.resolve(undefined)
+    expect((await assembly).variables).toMatchObject({ provider: first.provider, model: first.model })
+    const payload = { turn: 1, step: 0, signal: new AbortController().signal }
+    const seed: LlmCallConfig = { provider: 'seed', model: 'seed' }
+    await expect(agentEvents(ctx, agent).waterfall('agent/request', payload, () => Promise.resolve(seed)))
+      .resolves.toEqual(first)
+    dispose()
+    expect((await ctx.systemPrompt.assemble()).variables)
+      .toMatchObject({ provider: second.provider, model: second.model })
+    await expect(agentEvents(ctx, agent).waterfall('agent/request', payload, () => Promise.resolve(seed)))
+      .resolves.toEqual(second)
+    expect(save).not.toHaveBeenCalled()
+    expect(ctx.agentDefaultModel.currentSelection())
+      .toEqual({ provider: 'deepseek-official', model: 'deepseek-chat' })
+  })
+
   it('validates an ordered image batch before persisting any member', async () => {
     const { ctx, agent, sessionId } = await harness()
     const validateImage = vi.fn((_input: { data: Uint8Array }) => Promise.resolve())

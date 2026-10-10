@@ -82,6 +82,8 @@ References keep local Session data, scoped Contexts, and history streams alive, 
 
 GUI model selection requires the exact provider/model pair in the available catalog; unavailable choices reject with `session/model-unavailable`. Prompt admission retains the saved route without a catalog availability gate, so request execution reports missing credentials or unavailable models. `initializeDefaultModel()` saves the first available account model after login when no other provider has a configured API key; credential checks use configured references independently of model availability. A provider with no available models rejects initialization with `session/provider-models-unavailable`. Availability never substitutes another model or rewrites a Session selection.
 
+Host integrations use `ctx.sessionController.selectLocalModel(request)` to validate and install a Session-only selection without calling default persistence or changing the deployment default. It shares `selectModel` validation, per-Agent serialization, and prompt-assembly snapshot rules: an already assembled request retains its captured selection; the next assembly uses the new selection. The method is Host-only, not a Remote endpoint. Its presence is the compatibility check for this capability; callers requiring local-only selection must not fall back to `selectModel` or rely on a request flag on older Hosts.
+
 A successful `selectModel` response acknowledges the Session-local selection without waiting for the default profile setting to save. Default saves run in the background in submission order; a failure logs a warning and leaves the Session selection intact. New Sessions read the last successfully saved default.
 
 -----

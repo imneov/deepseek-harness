@@ -285,6 +285,16 @@ export class SessionController extends TypertRemoteService {
   }
 
   /**
+   * Select one Session-local model after explicitly resuming the Session, without saving the deployment default.
+   * Uses the same validation and prompt-assembly snapshot rules as selectModel.
+   * @param request - Session identity and requested model selection.
+   * @returns the normalized selection installed for the Session.
+   */
+  selectLocalModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue> {
+    return this.commands.selectModel(request, false)
+  }
+
+  /**
    * Select the first available account model after login when no provider API key is configured.
    * @returns after saving the first available model or retaining the existing default.
    */
