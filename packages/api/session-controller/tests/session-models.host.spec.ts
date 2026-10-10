@@ -157,6 +157,34 @@ function currentSelection(ctx: Context, sessionId: SessionId) {
 }
 
 describe('Web session model selection', () => {
+  it('selects a concrete Session-local route and effort without saving the default', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    onTestFinished(() => ctx.fiber.dispose())
+    ctx.llm.registerAdapter(['local-route'], new CatalogAdapter('Local Route', [
+      { provider: 'local-route', id: 'local-model', name: 'Local Model' },
+    ], { efforts: [{ id: ReasoningEffortId('medium'), name: 'Medium' }] }))
+    let stored: { provider: string; model: string; reasoningEffort?: ReasoningEffortId } = {
+      provider: 'deepseek-official', model: 'deepseek-chat',
+    }
+    const save = vi.fn((selection: typeof stored) => { stored = selection })
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => stored, saveDefaultModelSelection: save, cwd: '/tmp',
+    })
+    const selected = { provider: 'local-route', model: 'local-model', reasoningEffort: 'medium' }
+
+    await expect(controller.selectLocalModel({ sessionId, ...selected })).resolves.toEqual({ selected })
+    expect(currentSelection(ctx, sessionId)).toEqual(selected)
+    expect((await ctx.systemPrompt.assemble()).variables)
+      .toMatchObject({ provider: 'local-route', model: 'local-model' })
+    await expect(agentEvents(ctx, agent).waterfall(
+      'agent/request', { turn: 1, step: 0, signal: new AbortController().signal },
+      () => Promise.resolve({ provider: 'seed', model: 'seed' }),
+    )).resolves.toMatchObject(selected)
+    expect(save).not.toHaveBeenCalled()
+    expect(ctx.agentDefaultModel.currentSelection())
+      .toEqual({ provider: 'deepseek-official', model: 'deepseek-chat' })
+  })
+
   it('validates an ordered image batch before persisting any member', async () => {
     const { ctx, agent, sessionId } = await harness()
     const validateImage = vi.fn((_input: { data: Uint8Array }) => Promise.resolve())
