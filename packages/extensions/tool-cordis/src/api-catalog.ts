@@ -1944,6 +1944,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the normalized selection installed for the Session, without waiting for default persistence.',
       },
       {
+        signature: 'selectLocalModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue>',
+        description: 'Select one Session-local model after explicitly resuming the Session, without saving the deployment default. Uses the same validation and prompt-assembly snapshot rules as selectModel.',
+        parameters: [{ name: 'request', description: 'Session identity and requested model selection.' }],
+        returns: 'the normalized selection installed for the Session.',
+      },
+      {
         signature: '@Remote async initializeDefaultModel(): Promise<void>',
         description: 'Select the first available account model after login when no provider API key is configured.',
         parameters: [],
