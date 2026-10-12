@@ -110,6 +110,45 @@ describe('llm-pi-ai real dormant composition', () => {
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
   })
 
+  it('exposes a gateway HTTP/2 reset as a retryable transport failure through Responses SSE', async () => {
+    vi.stubEnv('PI_COMPOSITION_KEY', '')
+    const server = await mockServer([{
+      events: ['{"type":"error","code":"upstream_http2_stream_error","message":"Upstream HTTP/2 stream failed","param":null}'],
+    }])
+    const { ctx, settingsPath } = await loadComposition()
+    await writeFile(settingsPath, [
+      '- id: llm-pi-ai',
+      '  config:',
+      '    providers:',
+      '      gateway-reset:',
+      '        apiKeyEnv: PI_COMPOSITION_KEY',
+      '        api: openai-responses',
+      `        baseURL: ${server.url}`,
+      '        models:',
+      '          - id: reset-test',
+      '',
+    ].join('\n'))
+    await vi.waitFor(() => {
+      expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['gateway-reset'])
+    }, { timeout: 5000 })
+
+    const result = await assemble(ctx, { provider: 'gateway-reset', model: 'reset-test', messages: [] })
+    expect(result.finish).toEqual({
+      kind: 'error',
+      failure: {
+        message: 'Error Code upstream_http2_stream_error: Upstream HTTP/2 stream failed',
+        code: 'TRANSPORT',
+      },
+    })
+    expect(ctx.llm.providerRetryPolicy('gateway-reset')).toMatchObject({
+      mode: 'normal',
+      maxRetries: 5,
+      retryableCodes: expect.arrayContaining(['TRANSPORT']),
+    })
+    expect(server.paths).toEqual(['/responses'])
+    expect(server.requests).toHaveLength(1)
+  })
+
   it('uses settings-only route headers for model discovery', async () => {
     vi.stubEnv('PI_COMPOSITION_KEY', '')
     const server = await mockServer([{ body: JSON.stringify({ data: [{ id: 'acme-private' }] }) }])

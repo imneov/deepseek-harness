@@ -835,6 +835,20 @@ describe('toStreamChunks', () => {
     ])
   })
 
+  it('keeps a caller-cancelled gateway reset aborted instead of retryable', async () => {
+    const errorMessage = 'Error Code upstream_http2_stream_error: Upstream HTTP/2 stream failed'
+    const error = assistant({ stopReason: 'error', errorMessage })
+    const chunks = await collect(toStreamChunks(
+      feed({ type: 'error', reason: 'error', error }),
+      undefined,
+      AbortSignal.abort(),
+    ))
+    expect(chunks.at(-1)).toEqual({
+      type: 'finish',
+      reason: { kind: 'aborted', failure: { message: errorMessage, code: 'ABORTED' } },
+    })
+  })
+
   it('maps aborted error events to aborted finish', async () => {
     const error = assistant({ stopReason: 'aborted' })
     const chunks = await collect(toStreamChunks(feed({ type: 'error', reason: 'aborted', error })))
@@ -936,6 +950,26 @@ describe('mapStopReason / mapUsage', () => {
       stopReason: 'error',
       errorMessage: 'vector length limit exceeded',
     }))).toMatchObject({ kind: 'error', failure: { code: 'PI_AI_ERROR' } })
+  })
+
+  it.each([
+    'Error Code upstream_http2_stream_error: Upstream HTTP/2 stream failed',
+    'upstream_http2_stream_error',
+    'Upstream HTTP/2 stream failed',
+  ])('classifies gateway HTTP/2 resets as transport failures: %s', (errorMessage) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage }))).toEqual({
+      kind: 'error',
+      failure: { message: errorMessage, code: 'TRANSPORT' },
+    })
+  })
+
+  it.each([
+    ['upstream_http2_stream_error_details are unavailable', 'PI_AI_ERROR'],
+    ['HTTP/2 model is not supported', 'PI_AI_ERROR'],
+    ['HTTP 400: upstream_http2_stream_error', 'INVALID_REQUEST'],
+  ])('does not retry unrelated or rejected HTTP/2 requests: %s', (errorMessage, code) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+      .toMatchObject({ kind: 'error', failure: { code } })
   })
 
   it.each([
