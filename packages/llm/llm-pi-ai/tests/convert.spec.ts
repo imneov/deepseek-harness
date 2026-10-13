@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AttachmentId, ImageVariantId } from '@deepseek-ai/dsh-attachment'
 import type { AttachmentStore, ImageAttachmentRef, ImageRequestTarget, RequestImageAttachment } from '@deepseek-ai/dsh-attachment'
-import { createToolResultMessage, createUserMessage, ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, createMessage } from '@deepseek-ai/dsh-llm'
+import { createToolResultMessage, createUserMessage, ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, createMessage, resolveRetryPolicy } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { AssistantMessage, AssistantMessageEvent, Usage } from '@earendil-works/pi-ai'
 import { transformMessages } from '@earendil-works/pi-ai/api/transform-messages'
@@ -835,6 +835,20 @@ describe('toStreamChunks', () => {
     ])
   })
 
+  it('keeps a caller-cancelled gateway reset aborted instead of retryable', async () => {
+    const errorMessage = 'Error Code upstream_http2_stream_error: Upstream HTTP/2 stream failed'
+    const error = assistant({ stopReason: 'error', errorMessage })
+    const chunks = await collect(toStreamChunks(
+      feed({ type: 'error', reason: 'error', error }),
+      undefined,
+      AbortSignal.abort(),
+    ))
+    expect(chunks.at(-1)).toEqual({
+      type: 'finish',
+      reason: { kind: 'aborted', failure: { message: errorMessage, code: 'ABORTED' } },
+    })
+  })
+
   it('maps aborted error events to aborted finish', async () => {
     const error = assistant({ stopReason: 'aborted' })
     const chunks = await collect(toStreamChunks(feed({ type: 'error', reason: 'aborted', error })))
@@ -936,6 +950,52 @@ describe('mapStopReason / mapUsage', () => {
       stopReason: 'error',
       errorMessage: 'vector length limit exceeded',
     }))).toMatchObject({ kind: 'error', failure: { code: 'PI_AI_ERROR' } })
+  })
+
+  it.each([
+    'Error Code upstream_http2_stream_error: Upstream HTTP/2 stream failed',
+    'upstream_http2_stream_error',
+    'Upstream HTTP/2 stream failed',
+  ])('classifies gateway HTTP/2 resets as transport failures: %s', (errorMessage) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage }))).toEqual({
+      kind: 'error',
+      failure: { message: errorMessage, code: 'TRANSPORT' },
+    })
+  })
+
+  it.each([
+    ['upstream_http2_stream_error_details are unavailable', 'PI_AI_ERROR'],
+    ['HTTP/2 model is not supported', 'PI_AI_ERROR'],
+    ['HTTP 400: upstream_http2_stream_error', 'INVALID_REQUEST'],
+  ])('does not retry unrelated or rejected HTTP/2 requests: %s', (errorMessage, code) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+      .toMatchObject({ kind: 'error', failure: { code } })
+  })
+
+  it.each([
+    ['Error Code gateway_concurrency_limit: Concurrency limit exceeded for user, please retry later', 'RATE_LIMIT'],
+    ['gateway_concurrency_limit', 'RATE_LIMIT'],
+    ['Concurrency limit exceeded for user, please retry later', 'RATE_LIMIT'],
+    ['too many concurrent requests', 'RATE_LIMIT'],
+    ['Error Code upstream_error: Upstream service temporarily unavailable', 'SERVER'],
+    ['upstream_error', 'SERVER'],
+    ['Upstream service temporarily unavailable', 'SERVER'],
+  ])('classifies transient gateway backpressure as retryable: %s', (errorMessage, code) => {
+    const reason = mapStopReason(assistant({ stopReason: 'error', errorMessage }))
+    expect(reason).toEqual({ kind: 'error', failure: { message: errorMessage, code } })
+    if (reason.kind !== 'error') throw new Error('expected a failed response')
+    const policy = resolveRetryPolicy(undefined, 'test retry policy')
+    if (policy.mode !== 'normal') throw new Error('expected the default normal policy')
+    expect(policy.retryableCodes).toContain(reason.failure.code)
+  })
+
+  it.each([
+    ['Unsupported gateway concurrency configuration', 'PI_AI_ERROR'],
+    ['upstream_error_details are unavailable', 'PI_AI_ERROR'],
+    ['HTTP 400: upstream_error', 'INVALID_REQUEST'],
+  ])('does not retry unrelated or rejected upstream failures: %s', (errorMessage, code) => {
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+      .toMatchObject({ kind: 'error', failure: { code } })
   })
 
   it.each([
