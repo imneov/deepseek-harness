@@ -116,7 +116,7 @@ profile 的 `models` 列表会替换而非扩展路由的已安装目录；每�
 
 pi-ai 不提供的路由需要 `api`、`baseURL` 与非空 `models` 列表；无法服务的 profile 会在写入处被拒绝，并点名路由与模型。失败携带稳定 code：无法使用的凭据以 `INVALID_CREDENTIAL` 失败并点名路由与引用，`apiKeyEnv` 引用解析为空的路由以 `MISSING_CREDENTIAL` 失败，未配置模型以 `UNKNOWN_MODEL` 失败，终止性提供方失败则区分 `QUOTA` 与暂时性 `RATE_LIMIT`。`GenerateOptions.stop` 以 `UNSUPPORTED_OPTION` 被拒绝，因为 pi-ai 的通用流式 UI 无法跨提供方保证它。
 
-已识别的网关 HTTP/2 流重置（`upstream_http2_stream_error` 或 `Upstream HTTP/2 stream failed`）映射为 `TRANSPORT`，并保留原始错误消息。已挂载的[重试执行器](../llm-retry/README.zh.md)沿用路由现有的有上限策略；该分类不会改变上游截止时间，也不会让未知提供方错误变为可重试。
+已识别的网关 HTTP/2 流重置（`upstream_http2_stream_error` 或 `Upstream HTTP/2 stream failed`）映射为 `TRANSPORT`，网关并发上限（`gateway_concurrency_limit`、`concurrency limit exceeded`）映射为 `RATE_LIMIT`，上游被报告为不可用（`upstream_error`、`temporarily unavailable`）映射为 `SERVER`，均保留原始错误消息。已挂载的[重试执行器](../llm-retry/README.zh.md)沿用路由现有的有上限策略；该分类不会改变上游截止时间，也不会让未知提供方错误变为可重试。
 
 Config 更新严格验证发生变化的 provider。初始加载将已存储的目录故障保留为可编辑的 provider 诊断；未更改的故障 provider 不阻止其他编辑。可用模型仍可选择，无法解析的模型在网络 I/O 前失败。修复或删除问题配置会清除其诊断。
 
