@@ -234,7 +234,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
         const snapshot = this.workspaces.list.getSnapshot()
         const workspace = snapshot.items.find(item => item.workspaceId === workspaceId)
         if (workspace?.sessionIds.includes(sessionId)) finish()
-        else if (snapshot.state === 'error') finish(new Error(snapshot.error?.message ?? 'Workspace state stream failed'))
+        else if (snapshot.error !== null) finish(new Error(snapshot.error.message))
         else if (snapshot.phase === 'ready' && snapshot.state === 'idle' && workspace === undefined) {
           finish(new Error(`Workspace ${workspaceId} was removed before its Session could open`))
         }
