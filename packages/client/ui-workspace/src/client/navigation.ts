@@ -206,6 +206,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     let sessionId: SessionId
     try {
       sessionId = await this.connectWorkspace(workspaceId)
+      await this.waitForMembership(workspaceId, sessionId, navigation)
     } catch (error: unknown) {
       // Reported here, not in connectWorkspace: startup restoration calls that
       // directly and stays console-only.
@@ -214,6 +215,34 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     }
     if (navigation.aborted) return
     this.replaceMain(sessionId, navigation, 'reveal', beforeOpen)
+  }
+
+  private waitForMembership(workspaceId: WorkspaceId, sessionId: SessionId, signal: AbortSignal): Promise<void> {
+    if (signal.aborted) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const finish = (error?: Error): void => {
+        unsubscribe()
+        signal.removeEventListener('abort', check)
+        if (error === undefined) resolve()
+        else reject(error)
+      }
+      const check = (): void => {
+        if (signal.aborted) {
+          finish()
+          return
+        }
+        const snapshot = this.workspaces.list.getSnapshot()
+        const workspace = snapshot.items.find(item => item.workspaceId === workspaceId)
+        if (workspace?.sessionIds.includes(sessionId)) finish()
+        else if (snapshot.error !== null) finish(new Error(snapshot.error.message))
+        else if (snapshot.phase === 'ready' && snapshot.state === 'idle' && workspace === undefined) {
+          finish(new Error(`Workspace ${workspaceId} was removed before its Session could open`))
+        }
+      }
+      const unsubscribe = this.workspaces.list.subscribe(check)
+      signal.addEventListener('abort', check, { once: true })
+      check()
+    })
   }
 
   async forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void): Promise<SessionId> {
@@ -341,6 +370,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
       target = prepared?.workspaceId
     }
     if (sessionId === undefined && target !== undefined) sessionId = await this.connectWorkspace(target)
+    if (sessionId !== undefined && target !== undefined) await this.waitForMembership(target, sessionId, navigation)
     if (sessionId !== undefined && !navigation.aborted) {
       this.replaceMain(sessionId, navigation, 'preserve')
     }

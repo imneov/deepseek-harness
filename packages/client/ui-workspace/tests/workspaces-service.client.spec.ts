@@ -266,6 +266,7 @@ class FakeDirectoryPicker {
 }
 
 interface BenchOptions {
+  readonly deferMembership?: boolean
   readonly configureWorkspaces?: (workspaces: FakeWorkspaces) => void
   readonly workspaces?: WorkspaceSnapshot
   readonly sessions?: SessionListState
@@ -290,11 +291,26 @@ function bench(options: BenchOptions = {}) {
   options.configureSessions?.(sessions)
   const view = createWorkspaceViewStore().create()
   const notify = vi.fn<(toast: RowToast) => void>()
+  const sessionApi = new Proxy(sessions, {
+    get(target, key, receiver) {
+      if (key !== 'create') return Reflect.get(target, key, receiver)
+      return async (input: Parameters<ISessions['create']>[0]) => {
+        const id = await target.create(input)
+        if (!options.deferMembership && input?.workspaceId !== undefined) {
+          workspaces.list.update(state => ({ ...state, items: state.items.map(item =>
+            item.workspaceId === input.workspaceId && !item.sessionIds.includes(id)
+              ? { ...item, sessionIds: [id, ...item.sessionIds] }
+              : item) }))
+        }
+        return id
+      }
+    },
+  })
   const uiWorkspace = new UiWorkspaceService(
     ctx,
     directoryPicker.remote,
     workspaces,
-    sessions,
+    sessionApi,
     view.actions,
     notify,
   )
@@ -302,6 +318,73 @@ function bench(options: BenchOptions = {}) {
 }
 
 describe('UiWorkspaceService', () => {
+  it('waits for Workspace membership before selecting a newly created blank Session', async () => {
+    const b = bench({
+      deferMembership: true,
+      workspaces: workspaceState([workspace('a')]),
+      sessions: sessionState([], 'pending'),
+    })
+    const opening = b.uiWorkspace.openWorkspace(wid('a'))
+    await setImmediate()
+    expect(b.sessions.create).toHaveBeenCalledExactlyOnceWith({ workspaceId: wid('a') })
+    expect(b.sessions.retain).not.toHaveBeenCalled()
+
+    b.workspaces.list.set(workspaceState([workspace('a', [sid('created-a')])]))
+    await opening
+    expect(b.sessions.retain).toHaveBeenCalledExactlyOnceWith(sid('created-a'), { source: 'mainView' })
+  })
+
+  it.each(['session', 'panel', 'disposal'] as const)('cancels membership waiting after %s navigation', async (kind) => {
+    const b = bench({
+      deferMembership: true,
+      workspaces: workspaceState([workspace('a')]),
+      sessions: sessionState([], 'pending'),
+    })
+    const initialListeners = b.workspaces.list.listenersSnapshot().length
+    const opening = b.uiWorkspace.openWorkspace(wid('a'))
+    await setImmediate()
+    if (kind === 'session') b.uiWorkspace.openSession(sid('manual'))
+    else if (kind === 'panel') b.layout.selectPanel('other-panel' as MainPanelId)
+    else await b.ctx.fiber.dispose()
+    await opening
+    expect(b.workspaces.list.listenersSnapshot().length).toBe(kind === 'disposal' ? 0 : initialListeners)
+    b.workspaces.list.set(workspaceState([workspace('a', [sid('created-a')])]))
+    expect(b.sessions.retain.mock.calls.map(args => args[0])).toEqual(kind === 'session' ? [sid('manual')] : [])
+  })
+
+  it.each(['stream failure', 'Workspace removal'] as const)('reports %s while waiting for membership and releases its subscription', async (kind) => {
+    const b = bench({
+      deferMembership: true,
+      workspaces: workspaceState([workspace('a')]),
+      sessions: sessionState([], 'pending'),
+    })
+    b.uiWorkspace.openSession(sid('current'))
+    const initialListeners = b.workspaces.list.listenersSnapshot().length
+    const opening = b.uiWorkspace.openWorkspace(wid('a'))
+    const rejected = expect(opening).rejects.toThrow(kind === 'stream failure' ? 'workspace follow failed' : 'was removed')
+    await setImmediate()
+    b.workspaces.list.set(kind === 'stream failure'
+      ? { ...workspaceState([workspace('a')]), state: 'error', error: new RemoteError('gateway/internal', 'workspace follow failed', {}) }
+      : workspaceState())
+    await rejected
+    expect(b.workspaces.list.listenersSnapshot()).toHaveLength(initialListeners)
+    expect(b.sessions.retain).toHaveBeenCalledExactlyOnceWith(sid('current'), { source: 'mainView' })
+    expect(b.notify).toHaveBeenCalledWith({ kind: 'createFailed', message: expect.any(String) })
+  })
+
+  it('waits for startup-created Session membership before restoring the main selection', async () => {
+    const b = bench({
+      deferMembership: true,
+      workspaces: workspaceState([workspace('a')]),
+      sessions: sessionState(),
+    })
+    await setImmediate()
+    expect(b.sessions.create).toHaveBeenCalledOnce()
+    expect(b.sessions.retain).not.toHaveBeenCalled()
+    b.workspaces.list.set(workspaceState([workspace('a', [sid('created-a')])]))
+    await vi.waitFor(() => { expect(b.sessions.retain).toHaveBeenCalledOnce() })
+  })
+
   it('prepares and selects the default Workspace after both startup baselines', async () => {
     const b = bench({ configureWorkspaces: (workspaces) => {
       workspaces.initializeDefault.mockImplementation(async () => {
@@ -528,6 +611,9 @@ describe('UiWorkspaceService', () => {
     b.selectPanel.mockClear()
     await b.uiWorkspace.forkSession(sid('source'))
     expect(b.sessions.fork).toHaveBeenCalledWith({ sessionId: sid('source'), increaseTitle: true })
+    const onCreated = vi.fn<(childId: SessionId) => void>()
+    await b.uiWorkspace.forkSession(sid('source'), onCreated)
+    expect(b.sessions.fork).toHaveBeenCalledWith({ sessionId: sid('source'), increaseTitle: true, onCreated })
     expect(b.sessions.retain).not.toHaveBeenCalled()
     b.sessions.fork.mockRejectedValueOnce(new Error('fork failed'))
     await expect(b.uiWorkspace.forkSession(sid('source'))).rejects.toThrow('fork failed')
