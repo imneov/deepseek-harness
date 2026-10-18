@@ -486,6 +486,27 @@ describe('Web session model selection', () => {
     await ctx.fiber.dispose()
   })
 
+  it('selects a local model without saving defaults and still rejects unavailable models', async () => {
+    const { ctx, sessionId } = await harness()
+    const save = vi.fn()
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      saveDefaultModelSelection: save,
+      cwd: '/tmp',
+    })
+    await expect(controller.selectLocalModel({
+      sessionId, provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max',
+    })).resolves.toEqual({ selected: {
+      provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max',
+    } })
+    expect(currentSelection(ctx, sessionId)).toMatchObject({ model: 'deepseek-reasoner', reasoningEffort: 'max' })
+    expect(save).not.toHaveBeenCalled()
+    await expect(controller.selectLocalModel({ sessionId, provider: 'missing', model: 'missing' })).rejects.toThrow()
+    expect(currentSelection(ctx, sessionId)).toMatchObject({ model: 'deepseek-reasoner' })
+    expect(save).not.toHaveBeenCalled()
+    await ctx.fiber.dispose()
+  })
+
   it('rejects unlisted models and switches available models only after the next assembly', async () => {
     const { ctx, agent, sessionId } = await harness()
     const remote = createSessionTestRemote(ctx, { defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }), cwd: '/tmp' })
