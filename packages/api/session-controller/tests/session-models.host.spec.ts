@@ -157,6 +157,24 @@ function currentSelection(ctx: Context, sessionId: SessionId) {
 }
 
 describe('Web session model selection', () => {
+  it('selects a model only for the target session without saving the default', async () => {
+    const { ctx, sessionId } = await harness()
+    const saveDefaultModelSelection = vi.fn()
+    const controller = createSessionTestController(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      saveDefaultModelSelection,
+      cwd: '/tmp',
+    })
+    const selection = { provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: ReasoningEffortId('max') }
+    expect(await controller.selectLocalModel({ sessionId, ...selection })).toEqual({ selected: selection })
+    expect(currentSelection(ctx, sessionId)).toEqual(selection)
+    expect(saveDefaultModelSelection).not.toHaveBeenCalled()
+    await expect(controller.selectLocalModel({ sessionId, provider: 'missing', model: 'bad' }))
+      .rejects.toThrow()
+    expect(currentSelection(ctx, sessionId)).toEqual(selection)
+    expect(saveDefaultModelSelection).not.toHaveBeenCalled()
+  })
+
   it('validates an ordered image batch before persisting any member', async () => {
     const { ctx, agent, sessionId } = await harness()
     const validateImage = vi.fn((_input: { data: Uint8Array }) => Promise.resolve())

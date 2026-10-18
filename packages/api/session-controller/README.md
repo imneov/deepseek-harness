@@ -90,6 +90,8 @@ GUI model selection requires the exact provider/model pair in the available cata
 
 A successful `selectModel` response acknowledges the Session-local selection without waiting for the default profile setting to save. Default saves run in the background in submission order; a failure logs a warning and leaves the Session selection intact. New Sessions read the last successfully saved default.
 
+Host plugins use `selectLocalModel` to install the same validated selection for one Session without saving the profile default. It resumes the target Session and uses the same model availability, reasoning effort, and image admission checks as `selectModel`.
+
 -----
 
 <a id="configuration"></a>

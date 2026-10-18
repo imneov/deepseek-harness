@@ -90,6 +90,8 @@ GUI 模型选择要求确切提供方／模型对出现在可用目录中；不�
 
 `selectModel` 成功返回表示会话级模型选择已生效，不等待默认 profile 设置保存。默认设置在后台按提交顺序保存；保存失败会记录警告，并保留会话选择。新会话读取最近一次成功保存的默认值。
 
+Host 插件使用 `selectLocalModel` 为单个 Session 安装经过校验的模型选择，不保存 profile 默认值。该方法恢复目标 Session，并复用 `selectModel` 的模型可用性、推理强度与图片准入检查。
+
 -----
 
 <a id="configuration"></a>

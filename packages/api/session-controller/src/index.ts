@@ -313,6 +313,15 @@ export class SessionController extends TypertRemoteService {
   }
 
   /**
+   * Select a model for one Session without saving the profile default.
+   * @param request - Session identity and requested model selection.
+   * @returns the normalized selection installed after resuming and validating the Session.
+   */
+  selectLocalModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue> {
+    return this.commands.selectLocalModel(request)
+  }
+
+  /**
    * Select the first available account model after login when no provider API key is configured.
    * @returns after saving the first available model or retaining the existing default.
    */
