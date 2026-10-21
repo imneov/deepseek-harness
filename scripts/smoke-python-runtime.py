@@ -1742,6 +1742,7 @@ def smoke_sdk_scheduler_recovery(base_url: str, executable: Path, update_snapsho
         if sum(record.get("type") == "todo/write" for record in records) != 1:
             raise AssertionError("scheduler recovery executed an unstarted todo update")
         replacements = [(str(root), "{{cwd}}"), (RECOVERY_SESSION_ID, "{{parent}}")]
+        replacements.extend(job_snapshot_replacements([records]))
         result_value = [{
             "session_id": result.session_id,
             "final_response": result.final_response,
@@ -2348,6 +2349,7 @@ def build_snapshot_files(
 ) -> dict[str, str]:
     """Render the SDK result and three persisted logs into stable expected outputs."""
     replacements = [(str(cwd), "{{cwd}}"), (SNAPSHOT_SESSION_ID, "{{parent}}")]
+    replacements.extend(job_snapshot_replacements(list(logs.values())))
     replacements.append((snapshot_workflow_run_id(result), "{{workflow-run}}"))
     for index, child_id in enumerate(child_ids, start=1):
         replacements.append((child_id, f"{{{{child-{index}}}}}"))
@@ -2424,6 +2426,7 @@ def build_restart_snapshot_files(
         (RESTART_FIRST_SESSION_ID, "{{session-1}}"),
         (RESTART_SECOND_SESSION_ID, "{{session-2}}"),
     ]
+    replacements.extend(job_snapshot_replacements(list(logs.values())))
     result_value = [
         {
             "session_id": result.session_id,
@@ -2517,6 +2520,34 @@ def snapshot_agent_id(result: "RunResult", child_id: str) -> str:
     raise AssertionError(f"advanced snapshot has no finished agent for child {child_id}")
 
 
+def job_snapshot_replacements(logs: list[list[dict[str, object]]]) -> list[tuple[str, str]]:
+    """Tokenize job registry and instance identities without merging separate lifetimes."""
+    identities: dict[str, dict[str, str]] = {"registryEpoch": {}, "instanceId": {}}
+    replacements: list[tuple[str, str]] = []
+    for records in logs:
+        for record in records:
+            data = record.get("data")
+            if not isinstance(data, dict):
+                continue
+            if record.get("type") in {"jobs/registered", "jobs/settled", "jobs/collected"}:
+                identity = data
+            elif record.get("type") == "tool/result":
+                meta = data.get("meta")
+                identity = meta.get("jobReceipt") if isinstance(meta, dict) else None
+                if not isinstance(identity, dict):
+                    continue
+            else:
+                continue
+            for key, prefix in (("registryEpoch", "job-registry"), ("instanceId", "job-instance")):
+                actual = identity.get(key)
+                known = identities[key]
+                if isinstance(actual, str) and actual not in known:
+                    token = "{{" + prefix + ":" + str(len(known) + 1) + "}}"
+                    known[actual] = token
+                    replacements.append((actual, token))
+    return replacements
+
+
 def normalize_snapshot_value(
     value: object,
     replacements: list[tuple[str, str]],
@@ -2538,6 +2569,13 @@ def normalize_snapshot_value(
     }
     if normalized.get("type") == "session" and "createdAt" in normalized:
         normalized["createdAt"] = 0
+    if normalized.get("type") in {"jobs/registered", "jobs/settled", "jobs/collected"}:
+        data = normalized.get("data")
+        job = data.get("job") if isinstance(data, dict) else None
+        if isinstance(job, dict):
+            for field in ("startedAt", "finishedAt"):
+                if field in job:
+                    job[field] = 0
     if normalized.get("type") == "subagent/catalog":
         data = normalized.get("data")
         if isinstance(data, dict) and "childCreatedAt" in data:
