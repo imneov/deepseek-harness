@@ -1,0 +1,537 @@
+[
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-start",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-1"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-start",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-1"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-first",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1",
+              "wait": true
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-first",
+            "content": [
+              {
+                "type": "text",
+                "text": "python stream\npython final\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-start",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-1"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-first",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1",
+              "wait": true
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-first",
+            "content": [
+              {
+                "type": "text",
+                "text": "python stream\npython final\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-repeat",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-repeat",
+            "content": [
+              {
+                "type": "text",
+                "text": "(no new output)\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-start",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-1"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-first",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1",
+              "wait": true
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-first",
+            "content": [
+              {
+                "type": "text",
+                "text": "python stream\npython final\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-repeat",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-repeat",
+            "content": [
+              {
+                "type": "text",
+                "text": "(no new output)\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-unknown",
+            "name": "job_output",
+            "input": {
+              "job_id": "missing"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-unknown",
+            "content": [
+              {
+                "type": "text",
+                "text": "Error: unknown job missing"
+              }
+            ],
+            "is_error": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "model": "smoke-model",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          },
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-start",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-1"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-first",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1",
+              "wait": true
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-first",
+            "content": [
+              {
+                "type": "text",
+                "text": "python stream\npython final\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-repeat",
+            "name": "job_output",
+            "input": {
+              "job_id": "bash-1"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-repeat",
+            "content": [
+              {
+                "type": "text",
+                "text": "(no new output)\n[status: completed]"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-unknown",
+            "name": "job_output",
+            "input": {
+              "job_id": "missing"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-unknown",
+            "content": [
+              {
+                "type": "text",
+                "text": "Error: unknown job missing"
+              }
+            ],
+            "is_error": true
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "jobs-remove",
+            "name": "snapshot_remove_job",
+            "input": {}
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "jobs-remove",
+            "content": [
+              {
+                "type": "text",
+                "text": "bash-2"
+              }
+            ],
+            "is_error": false
+          }
+        ]
+      }
+    ]
+  }
+]

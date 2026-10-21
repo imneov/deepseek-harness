@@ -105,6 +105,11 @@ RESTART_SECOND_PROMPT = "Complete the second isolated Python SDK process turn."
 RESTART_SECOND_TEXT = "PROCESS_TWO_OK"
 RESTART_FIRST_SESSION_ID = "process-one"
 RESTART_SECOND_SESSION_ID = "process-two"
+JOBS_PROMPT = "Collect a packaged background job twice, then remove a foreground job."
+JOBS_TEXT = "JOBS_OBSERVATION_OK"
+JOBS_SESSION_ID = "job-observation"
+JOBS_SNAPSHOT_DIRECTORY = Path(__file__).resolve().parent / "snapshots/python-sdk-single-exe/jobs"
+JOBS_SNAPSHOT_FILENAMES = ("result.json", "requests.json", "session.v4.jsonl")
 RECOVERY_PROMPT = "Run three todo updates; the scheduler will reject the second call."
 RECOVERY_CONTINUE_PROMPT = "Continue after the scheduler failure without repeating any tools."
 RECOVERY_TEXT = "SCHEDULER_RECOVERY_OK"
@@ -375,6 +380,22 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         minimal = minimal_tool_followup(call_id, tool_name, tool_text)
         if minimal is not None:
             return minimal
+        if call_id == "jobs-start" and tool_name == "snapshot_start_job":
+            assert tool_text == "bash-1" and not result.get("is_error"), result
+            assert_advertised_tool(body, "job_output")
+            return tool_call_chunks("jobs-first", "job_output", {"job_id": tool_text, "wait": True})
+        if call_id == "jobs-first" and tool_name == "job_output":
+            assert tool_text == "python stream\npython final\n[status: completed]" and not result.get("is_error"), result
+            return tool_call_chunks("jobs-repeat", "job_output", {"job_id": "bash-1"})
+        if call_id == "jobs-repeat" and tool_name == "job_output":
+            assert tool_text == "(no new output)\n[status: completed]" and not result.get("is_error"), result
+            return tool_call_chunks("jobs-unknown", "job_output", {"job_id": "missing"})
+        if call_id == "jobs-unknown" and tool_name == "job_output":
+            assert "unknown job" in tool_text and result.get("is_error"), result
+            return tool_call_chunks("jobs-remove", "snapshot_remove_job", {})
+        if call_id == "jobs-remove" and tool_name == "snapshot_remove_job":
+            assert tool_text == "bash-2" and not result.get("is_error"), result
+            return text_chunks(JOBS_TEXT)
         if call_id == "python-dynamic-read" and tool_name == "read":
             if "Call snapshot_ping once." not in tool_text or result.get("is_error"):
                 raise AssertionError(f"dynamic tool scenario could not read its task: {tool_text}")
@@ -427,11 +448,15 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         PROFILE_PLUGIN_PROMPT,
         AUTHORING_PROMPT,
         DYNAMIC_TOOLS_PROMPT,
+        JOBS_PROMPT,
     }
     prompt = next(
         (candidate for candidate in user_prompts if candidate in scenario_prompts),
         message_text(latest.get("content")),
     )
+    if prompt == JOBS_PROMPT:
+        assert_advertised_tool(body, "snapshot_start_job")
+        return tool_call_chunks("jobs-start", "snapshot_start_job", {})
     if prompt == SNAPSHOT_DIRECT_CHILD_PROMPT:
         return text_chunks("DIRECT_CHILD_OK")
     if prompt == AUTHORING_PROMPT:
@@ -778,7 +803,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--scenario",
-        choices=("all", "sdk-default", "sdk-custom", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-fs-search", "sdk-spawn-node", "sdk-mcp", "sdk-snapshot", "sdk-recovery", "sdk-restart", "sdk-profile-plugin", "sdk-office", "sdk-authoring", "sdk-live", "runner", "direct"),
+        choices=("all", "sdk-default", "sdk-custom", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-fs-search", "sdk-spawn-node", "sdk-mcp", "sdk-snapshot", "sdk-recovery", "sdk-jobs", "sdk-restart", "sdk-profile-plugin", "sdk-office", "sdk-authoring", "sdk-live", "runner", "direct"),
         default="all",
     )
     parser.add_argument("--exe", type=Path)
@@ -797,10 +822,10 @@ def main() -> None:
         parser.error("--scenario sdk-profile-plugin requires --installed-wheel")
     if args.installed_wheel:
         args.exe = assert_installed_wheel_environment()
-    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-fs-search", "sdk-spawn-node", "sdk-snapshot", "sdk-recovery", "sdk-restart", "sdk-office", "sdk-authoring", "runner", "direct"} and args.exe is None:
-        parser.error("--exe is required for custom, minimal, dynamic-tools, fs-search, spawn-node, snapshot, recovery, restart, office, runner, and direct scenarios")
-    if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-snapshot", "sdk-recovery", "sdk-restart", "sdk-authoring"}:
-        parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-minimal-in-history, sdk-dynamic-tools, sdk-snapshot, sdk-recovery, sdk-restart, sdk-authoring, or all")
+    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-fs-search", "sdk-spawn-node", "sdk-snapshot", "sdk-recovery", "sdk-jobs", "sdk-restart", "sdk-office", "sdk-authoring", "runner", "direct"} and args.exe is None:
+        parser.error("--exe is required for custom, minimal, dynamic-tools, fs-search, spawn-node, snapshot, recovery, jobs, restart, office, runner, and direct scenarios")
+    if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-minimal-in-history", "sdk-dynamic-tools", "sdk-snapshot", "sdk-recovery", "sdk-jobs", "sdk-restart", "sdk-authoring"}:
+        parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-minimal-in-history, sdk-dynamic-tools, sdk-snapshot, sdk-recovery, sdk-jobs, sdk-restart, sdk-authoring, or all")
     if args.exe is not None and not args.exe.is_file():
         parser.error(f"runtime executable does not exist: {args.exe}")
 
@@ -855,6 +880,9 @@ def main() -> None:
         if args.scenario in {"all", "sdk-snapshot", "sdk-recovery"}:
             assert args.exe is not None
             smoke_sdk_scheduler_recovery(model.url, args.exe.resolve(), args.update_snapshots)
+        if args.scenario in {"all", "sdk-jobs"}:
+            assert args.exe is not None
+            smoke_sdk_jobs(model.url, args.exe.resolve(), args.update_snapshots)
         if args.scenario in {"all", "sdk-restart"}:
             assert args.exe is not None
             smoke_sdk_restart_snapshot(model.url, args.exe.resolve(), args.update_snapshots)
@@ -1677,6 +1705,93 @@ def smoke_sdk_restart_snapshot(base_url: str, executable: Path, update_snapshots
             files, update_snapshots, RESTART_SNAPSHOT_DIRECTORY, RESTART_SNAPSHOT_FILENAMES,
             native_writer_output=True,
         )
+
+
+def job_snapshot_replacements(records: list[dict[str, object]]) -> list[tuple[str, str]]:
+    """Map registered identities once, preserving mismatches in later facts and receipts."""
+    identities: dict[str, list[str]] = {"registryEpoch": [], "instanceId": []}
+    labels = {"registryEpoch": "job-epoch", "instanceId": "job-instance"}
+    for record in records:
+        if record.get("type") != "jobs/registered":
+            continue
+        for key, values in identities.items():
+            value = record["data"][key]
+            if value not in values:
+                values.append(value)
+    return [(value, f"{{{{{labels[key]}:{index}}}}}")
+            for key, values in identities.items() for index, value in enumerate(values, start=1)]
+
+
+def smoke_sdk_jobs(base_url: str, executable: Path, update_snapshots: bool) -> None:
+    """Record actual jobs facts and terminal receipts through the packaged runtime and Python SDK."""
+    from deepseek_harness import DeepSeekHarness
+
+    first_request = len(MockModelHandler.requests)
+    with tempfile.TemporaryDirectory(prefix="dsh-sdk-jobs-") as temporary:
+        root = Path(temporary).resolve()
+        home = root / "home"
+        sessions = home / "sessions"
+        patch = write_profile_patch(root, "jobs.patch.yml", sessions, [
+            *({"id": row, "disabled": True} for row in (
+                "agent-instructions", "skill", "skill-filesystem", "skill-office", "tool-bash", "tool-pwsh",
+            )),
+            {"id": "session-title-llm", "disabled": True},
+            {"id": "session-log-deepseek", "config": {"enabled": False}},
+            {"id": "tool-jobs", "config": {"completionDelivery": "quiet"}},
+            {"insert": [{"id": "jobs-fixture", "name": (
+                Path(__file__).resolve().parent / "fixtures/python-sdk-jobs.mjs"
+            ).as_uri()}]},
+        ])
+        with DeepSeekHarness(
+            provider="deepseek-official", model="smoke-model", cwd=str(root),
+            dsh_bin=str(executable), dsh_home=str(home), patches=(str(patch),),
+            env={"DSH_PERMISSION_MODE": "danger-full-access", "DSH_TELEMETRY_DISABLED": "1"},
+            api_key="sk-keyless-smoke", base_url=base_url, request_timeout_seconds=60,
+        ) as harness:
+            result = harness.run(JOBS_PROMPT, session_id=JOBS_SESSION_ID)
+        assert result.final_response == JOBS_TEXT and result.finish_reason == "completed", result
+        records = read_session_logs(sessions)[JOBS_SESSION_ID]
+        facts = [record for record in records if record.get("type", "").startswith("jobs/")]
+        assert [(record["type"], record["data"]["terminalResult"], record["data"].get("collection")) for record in facts] == [
+            ("jobs/registered", "not-terminal", None), ("jobs/settled", "pending", None),
+            ("jobs/collected", "collected", "read"),
+            ("jobs/registered", "not-terminal", None), ("jobs/settled", "pending", None),
+            ("jobs/collected", "collected", "remove"),
+        ], facts
+        assert all(record.get("ignorable") is True for record in facts), facts
+        assert [event for event in result.events if event.get("type", "").startswith("jobs/")] == facts
+        delivered = [notification.payload["event"] for notification in result.notifications
+                     if notification.method == "session.event" and notification.payload.get("sessionId") == result.session_id]
+        assert [event for event in delivered if event.get("type", "").startswith("jobs/")] == facts
+        registered = [record["data"] for record in facts if record["type"] == "jobs/registered"]
+        assert registered[0]["registryEpoch"] == registered[1]["registryEpoch"]
+        assert registered[0]["instanceId"] != registered[1]["instanceId"]
+        tool_results = [record["data"] for record in records if record.get("type") == "tool/result"]
+        identity = {key: registered[0][key] for key in ("registryEpoch", "instanceId")}
+        assert [data.get("meta", {}).get("jobReceipt") for data in tool_results] == [
+            None, {**identity, "jobId": "bash-1", "terminalRead": "first"},
+            {**identity, "jobId": "bash-1", "terminalRead": "repeat"}, None, None,
+        ], tool_results
+        assert [event["data"] for event in result.events if event.get("type") == "tool/result"] == tool_results
+        requests = MockModelHandler.requests[first_request:]
+        assert len(requests) == 6, requests
+        replacements = [(str(root), "{{cwd}}"), (JOBS_SESSION_ID, "{{parent}}"), *job_snapshot_replacements(records)]
+        result_value = {
+            "session_id": result.session_id, "final_response": result.final_response,
+            "finish_reason": result.finish_reason, "events": result.events,
+            "notifications": [{"method": item.method, "payload": item.payload} for item in result.notifications],
+        }
+        content = render_jsonl(project_session_snapshot([
+            normalize_snapshot_value(record, replacements) for record in records
+        ]))
+        files = {
+            "result.json": json.dumps(normalize_snapshot_value(result_value, replacements), indent=2) + "\n",
+            "requests.json": json.dumps(normalize_snapshot_value([
+                {"model": request.get("model"), "messages": restart_request_messages(request)} for request in requests
+            ], replacements), indent=2) + "\n",
+            snapshot_session_filename(0, session_header_version(content, "jobs")): content,
+        }
+        compare_snapshot_files(files, update_snapshots, JOBS_SNAPSHOT_DIRECTORY, JOBS_SNAPSHOT_FILENAMES)
 
 
 def smoke_sdk_scheduler_recovery(base_url: str, executable: Path, update_snapshots: bool) -> None:
@@ -2538,6 +2653,11 @@ def normalize_snapshot_value(
     }
     if normalized.get("type") == "session" and "createdAt" in normalized:
         normalized["createdAt"] = 0
+    if normalized.get("type") in ("jobs/registered", "jobs/settled", "jobs/collected"):
+        job = normalized["data"]["job"]
+        for key in ("startedAt", "finishedAt"):
+            if key in job:
+                job[key] = 0
     if normalized.get("type") == "subagent/catalog":
         data = normalized.get("data")
         if isinstance(data, dict) and "childCreatedAt" in data:

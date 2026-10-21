@@ -1,0 +1,3083 @@
+{
+  "session_id": "{{parent}}",
+  "final_response": "JOBS_OBSERVATION_OK",
+  "finish_reason": "completed",
+  "events": [
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 3,
+      "time": 0,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Collect a packaged background job twice, then remove a foreground job."
+              }
+            ],
+            "source": {
+              "kind": "user"
+            },
+            "role": "user",
+            "id": "{{messageId}}"
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 4,
+      "time": 0,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 5,
+      "time": 0,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 6,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "system/message",
+      "seq": 7,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "{{system}}"
+            }
+          ],
+          "source": {
+            "kind": "system-prompt"
+          },
+          "id": "{{messageId}}"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 8,
+      "time": 0,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Collect a packaged background job twice, then remove a foreground job."
+          }
+        ],
+        "source": {
+          "kind": "user"
+        },
+        "role": "user",
+        "id": "{{messageId}}"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 9,
+      "time": 0,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+          }
+        ],
+        "source": {
+          "kind": "runtime-context",
+          "form": "snapshot",
+          "sections": [
+            {
+              "name": "sandbox:policy",
+              "text": "Current DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations."
+            },
+            {
+              "name": "approval:policy",
+              "text": "Approval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+            }
+          ]
+        },
+        "role": "user",
+        "id": "{{messageId}}"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 10,
+      "time": 0,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "maxTokens": 256000,
+            "reasoningEffort": "high"
+          },
+          "adapterDefaults": {
+            "reasoningEffort": true,
+            "maxTokens": true
+          },
+          "tools": [
+            "create_goal",
+            "edit",
+            "exit_plan_mode",
+            "get_goal",
+            "glob",
+            "grep",
+            "interrupt_agent",
+            "job_kill",
+            "job_list",
+            "job_output",
+            "list_agents",
+            "load_workspace_dependencies",
+            "read",
+            "read_image",
+            "send_message",
+            "snapshot_remove_job",
+            "snapshot_start_job",
+            "subagent",
+            "subagent_fork",
+            "todo_write",
+            "update_goal",
+            "web_fetch",
+            "web_search",
+            "workflow",
+            "write"
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 11,
+      "time": 0,
+      "data": {
+        "provider": "deepseek-official",
+        "model": "smoke-model",
+        "contextWindow": 1000000
+      }
+    },
+    {
+      "type": "session/title",
+      "seq": 12,
+      "time": 0,
+      "data": {
+        "title": "Collect a packaged background job",
+        "messageSeqs": [
+          8
+        ],
+        "source": {
+          "kind": "fallback"
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 13,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "jobs-start",
+              "name": "snapshot_start_job",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-start",
+            "name": "snapshot_start_job",
+            "args": [
+              ""
+            ]
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-start",
+            "args": [
+              "{}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "jobs-start",
+                "name": "snapshot_start_job",
+                "arguments": "{}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 14,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "jobs-start",
+        "name": "snapshot_start_job",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "jobs/registered",
+      "seq": 15,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-1",
+          "kind": "bash",
+          "label": "python output job",
+          "owner": "{{parent}}",
+          "status": "running",
+          "startedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:1}}",
+        "terminalResult": "not-terminal"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "jobs/settled",
+      "seq": 16,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-1",
+          "kind": "bash",
+          "label": "python output job",
+          "owner": "{{parent}}",
+          "status": "completed",
+          "startedAt": 0,
+          "finishedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:1}}",
+        "terminalResult": "pending"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "tool/result",
+      "seq": 17,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "jobs-start"
+          },
+          "toolCallId": "jobs-start",
+          "content": [
+            {
+              "type": "text",
+              "text": "bash-1"
+            }
+          ],
+          "isError": false,
+          "id": "{{messageId}}"
+        }
+      },
+      "sourceEventSeqs": [
+        14
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 18,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 19,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 20,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "jobs-first",
+              "name": "job_output",
+              "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-first",
+            "name": "job_output",
+            "args": [
+              ""
+            ]
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-first",
+            "args": [
+              "{\"job_id\": \"bash-1\", \"wait\": true}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "jobs-first",
+                "name": "job_output",
+                "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 21,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "jobs-first",
+        "name": "job_output",
+        "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+      }
+    },
+    {
+      "type": "jobs/collected",
+      "seq": 22,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-1",
+          "kind": "bash",
+          "label": "python output job",
+          "owner": "{{parent}}",
+          "status": "completed",
+          "startedAt": 0,
+          "finishedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:1}}",
+        "terminalResult": "collected",
+        "collection": "read"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "tool/result",
+      "seq": 23,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "jobs-first"
+          },
+          "toolCallId": "jobs-first",
+          "content": [
+            {
+              "type": "text",
+              "text": "python stream\npython final\n[status: completed]"
+            }
+          ],
+          "isError": false,
+          "id": "{{messageId}}"
+        },
+        "meta": {
+          "jobReceipt": {
+            "registryEpoch": "{{job-epoch:1}}",
+            "jobId": "bash-1",
+            "instanceId": "{{job-instance:1}}",
+            "terminalRead": "first"
+          }
+        }
+      },
+      "sourceEventSeqs": [
+        21
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 24,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 25,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 26,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "jobs-repeat",
+              "name": "job_output",
+              "arguments": "{\"job_id\": \"bash-1\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-repeat",
+            "name": "job_output",
+            "args": [
+              ""
+            ]
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-repeat",
+            "args": [
+              "{\"job_id\": \"bash-1\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "jobs-repeat",
+                "name": "job_output",
+                "arguments": "{\"job_id\": \"bash-1\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 27,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "jobs-repeat",
+        "name": "job_output",
+        "arguments": "{\"job_id\": \"bash-1\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 28,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "jobs-repeat"
+          },
+          "toolCallId": "jobs-repeat",
+          "content": [
+            {
+              "type": "text",
+              "text": "(no new output)\n[status: completed]"
+            }
+          ],
+          "isError": false,
+          "id": "{{messageId}}"
+        },
+        "meta": {
+          "jobReceipt": {
+            "registryEpoch": "{{job-epoch:1}}",
+            "jobId": "bash-1",
+            "instanceId": "{{job-instance:1}}",
+            "terminalRead": "repeat"
+          }
+        }
+      },
+      "sourceEventSeqs": [
+        27
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 29,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 30,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 4
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 31,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "jobs-unknown",
+              "name": "job_output",
+              "arguments": "{\"job_id\": \"missing\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-unknown",
+            "name": "job_output",
+            "args": [
+              ""
+            ]
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-unknown",
+            "args": [
+              "{\"job_id\": \"missing\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "jobs-unknown",
+                "name": "job_output",
+                "arguments": "{\"job_id\": \"missing\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 32,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "jobs-unknown",
+        "name": "job_output",
+        "arguments": "{\"job_id\": \"missing\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 33,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "jobs-unknown"
+          },
+          "toolCallId": "jobs-unknown",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: unknown job missing"
+            }
+          ],
+          "isError": true,
+          "id": "{{messageId}}"
+        }
+      },
+      "sourceEventSeqs": [
+        32
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 34,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 4
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 35,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 5
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 36,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "jobs-remove",
+              "name": "snapshot_remove_job",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-remove",
+            "name": "snapshot_remove_job",
+            "args": [
+              ""
+            ]
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "id": "jobs-remove",
+            "args": [
+              "{}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "jobs-remove",
+                "name": "snapshot_remove_job",
+                "arguments": "{}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 37,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "callId": "jobs-remove",
+        "name": "snapshot_remove_job",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "jobs/registered",
+      "seq": 38,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-2",
+          "kind": "bash",
+          "label": "python foreground job",
+          "owner": "{{parent}}",
+          "status": "running",
+          "startedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:2}}",
+        "terminalResult": "not-terminal"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "jobs/settled",
+      "seq": 39,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-2",
+          "kind": "bash",
+          "label": "python foreground job",
+          "owner": "{{parent}}",
+          "status": "completed",
+          "startedAt": 0,
+          "finishedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:2}}",
+        "terminalResult": "pending"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "jobs/collected",
+      "seq": 40,
+      "time": 0,
+      "data": {
+        "job": {
+          "id": "bash-2",
+          "kind": "bash",
+          "label": "python foreground job",
+          "owner": "{{parent}}",
+          "status": "completed",
+          "startedAt": 0,
+          "finishedAt": 0,
+          "output": {
+            "total": 14,
+            "earliest": 0
+          }
+        },
+        "registryEpoch": "{{job-epoch:1}}",
+        "instanceId": "{{job-instance:2}}",
+        "terminalResult": "collected",
+        "collection": "remove"
+      },
+      "ignorable": true
+    },
+    {
+      "type": "tool/result",
+      "seq": 41,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "jobs-remove"
+          },
+          "toolCallId": "jobs-remove",
+          "content": [
+            {
+              "type": "text",
+              "text": "bash-2"
+            }
+          ],
+          "isError": false,
+          "id": "{{messageId}}"
+        }
+      },
+      "sourceEventSeqs": [
+        37
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 42,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 5
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 43,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 6
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 44,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "JOBS_OBSERVATION_OK"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "smoke-model"
+              },
+              "blocks": [
+                {
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "id": "{{messageId}}"
+        },
+        "usage": {
+          "inputTokens": 3,
+          "outputTokens": 3,
+          "totalTokens": 6
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          },
+          {
+            "type": "text-chunks",
+            "time0": 0,
+            "index": 0,
+            "dt": [],
+            "texts": [
+              "JOBS_OBSERVATION_OK"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "text",
+                "text": "JOBS_OBSERVATION_OK"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3,
+                "totalTokens": 6
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 0,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "stop"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "deepseek-messages",
+                  "version": 1,
+                  "model": "smoke-model"
+                },
+                "blocks": [
+                  {
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 45,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 6
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 46,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "notifications": [
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "agent/inbox/spliced",
+          "seq": 3,
+          "time": 0,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "inserted": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Collect a packaged background job twice, then remove a foreground job."
+                  }
+                ],
+                "source": {
+                  "kind": "user"
+                },
+                "role": "user",
+                "id": "{{messageId}}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "method": "session.status",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "status": "running"
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "turn/start",
+          "seq": 4,
+          "time": 0,
+          "data": {
+            "turn": 1
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "agent/inbox/spliced",
+          "seq": 5,
+          "time": 0,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "removedCount": 1,
+            "inserted": []
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 6,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "system/message",
+          "seq": 7,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "message": {
+              "role": "system",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{{system}}"
+                }
+              ],
+              "source": {
+                "kind": "system-prompt"
+              },
+              "id": "{{messageId}}"
+            }
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "user/message",
+          "seq": 8,
+          "time": 0,
+          "data": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Collect a packaged background job twice, then remove a foreground job."
+              }
+            ],
+            "source": {
+              "kind": "user"
+            },
+            "role": "user",
+            "id": "{{messageId}}"
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "user/message",
+          "seq": 9,
+          "time": 0,
+          "data": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+              }
+            ],
+            "source": {
+              "kind": "runtime-context",
+              "form": "snapshot",
+              "sections": [
+                {
+                  "name": "sandbox:policy",
+                  "text": "Current DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations."
+                },
+                {
+                  "name": "approval:policy",
+                  "text": "Approval prompts are disabled in this session: actions that require approval are rejected automatically \u2014 do not request sandbox escalation (do not set `sandbox_permissions`)."
+                }
+              ]
+            },
+            "role": "user",
+            "id": "{{messageId}}"
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "request/header",
+          "seq": 10,
+          "time": 0,
+          "data": {
+            "header": {
+              "config": {
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "maxTokens": 256000,
+                "reasoningEffort": "high"
+              },
+              "adapterDefaults": {
+                "reasoningEffort": true,
+                "maxTokens": true
+              },
+              "tools": [
+                "create_goal",
+                "edit",
+                "exit_plan_mode",
+                "get_goal",
+                "glob",
+                "grep",
+                "interrupt_agent",
+                "job_kill",
+                "job_list",
+                "job_output",
+                "list_agents",
+                "load_workspace_dependencies",
+                "read",
+                "read_image",
+                "send_message",
+                "snapshot_remove_job",
+                "snapshot_start_job",
+                "subagent",
+                "subagent_fork",
+                "todo_write",
+                "update_goal",
+                "web_fetch",
+                "web_search",
+                "workflow",
+                "write"
+              ]
+            },
+            "reason": "initial"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "request/context",
+          "seq": 11,
+          "time": 0,
+          "data": {
+            "provider": "deepseek-official",
+            "model": "smoke-model",
+            "contextWindow": 1000000
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "session/title",
+          "seq": 12,
+          "time": 0,
+          "data": {
+            "title": "Collect a packaged background job",
+            "messageSeqs": [
+              8
+            ],
+            "source": {
+              "kind": "fallback"
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 13,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool-call",
+                  "id": "jobs-start",
+                  "name": "snapshot_start_job",
+                  "arguments": "{}"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "tool-call"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "tool-call"
+                }
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-start",
+                "name": "snapshot_start_job",
+                "args": [
+                  ""
+                ]
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-start",
+                "args": [
+                  "{}"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "tool-call",
+                    "id": "jobs-start",
+                    "name": "snapshot_start_job",
+                    "arguments": "{}"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/call",
+          "seq": 14,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "jobs-start",
+            "name": "snapshot_start_job",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/registered",
+          "seq": 15,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-1",
+              "kind": "bash",
+              "label": "python output job",
+              "owner": "{{parent}}",
+              "status": "running",
+              "startedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:1}}",
+            "terminalResult": "not-terminal"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/settled",
+          "seq": 16,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-1",
+              "kind": "bash",
+              "label": "python output job",
+              "owner": "{{parent}}",
+              "status": "completed",
+              "startedAt": 0,
+              "finishedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:1}}",
+            "terminalResult": "pending"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/result",
+          "seq": 17,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "jobs-start"
+              },
+              "toolCallId": "jobs-start",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "bash-1"
+                }
+              ],
+              "isError": false,
+              "id": "{{messageId}}"
+            }
+          },
+          "sourceEventSeqs": [
+            14
+          ],
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 18,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 1
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 19,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 2
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 20,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool-call",
+                  "id": "jobs-first",
+                  "name": "job_output",
+                  "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "tool-call"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "tool-call"
+                }
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-first",
+                "name": "job_output",
+                "args": [
+                  ""
+                ]
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-first",
+                "args": [
+                  "{\"job_id\": \"bash-1\", \"wait\": true}"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "tool-call",
+                    "id": "jobs-first",
+                    "name": "job_output",
+                    "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/call",
+          "seq": 21,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "jobs-first",
+            "name": "job_output",
+            "arguments": "{\"job_id\": \"bash-1\", \"wait\": true}"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/collected",
+          "seq": 22,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-1",
+              "kind": "bash",
+              "label": "python output job",
+              "owner": "{{parent}}",
+              "status": "completed",
+              "startedAt": 0,
+              "finishedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:1}}",
+            "terminalResult": "collected",
+            "collection": "read"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/result",
+          "seq": 23,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "jobs-first"
+              },
+              "toolCallId": "jobs-first",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "python stream\npython final\n[status: completed]"
+                }
+              ],
+              "isError": false,
+              "id": "{{messageId}}"
+            },
+            "meta": {
+              "jobReceipt": {
+                "registryEpoch": "{{job-epoch:1}}",
+                "jobId": "bash-1",
+                "instanceId": "{{job-instance:1}}",
+                "terminalRead": "first"
+              }
+            }
+          },
+          "sourceEventSeqs": [
+            21
+          ],
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 24,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 2
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 25,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 3
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 26,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool-call",
+                  "id": "jobs-repeat",
+                  "name": "job_output",
+                  "arguments": "{\"job_id\": \"bash-1\"}"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "tool-call"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "tool-call"
+                }
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-repeat",
+                "name": "job_output",
+                "args": [
+                  ""
+                ]
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-repeat",
+                "args": [
+                  "{\"job_id\": \"bash-1\"}"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "tool-call",
+                    "id": "jobs-repeat",
+                    "name": "job_output",
+                    "arguments": "{\"job_id\": \"bash-1\"}"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/call",
+          "seq": 27,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "jobs-repeat",
+            "name": "job_output",
+            "arguments": "{\"job_id\": \"bash-1\"}"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/result",
+          "seq": 28,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "jobs-repeat"
+              },
+              "toolCallId": "jobs-repeat",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "(no new output)\n[status: completed]"
+                }
+              ],
+              "isError": false,
+              "id": "{{messageId}}"
+            },
+            "meta": {
+              "jobReceipt": {
+                "registryEpoch": "{{job-epoch:1}}",
+                "jobId": "bash-1",
+                "instanceId": "{{job-instance:1}}",
+                "terminalRead": "repeat"
+              }
+            }
+          },
+          "sourceEventSeqs": [
+            27
+          ],
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 29,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 3
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 30,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 4
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 31,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool-call",
+                  "id": "jobs-unknown",
+                  "name": "job_output",
+                  "arguments": "{\"job_id\": \"missing\"}"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "tool-call"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "tool-call"
+                }
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-unknown",
+                "name": "job_output",
+                "args": [
+                  ""
+                ]
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-unknown",
+                "args": [
+                  "{\"job_id\": \"missing\"}"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "tool-call",
+                    "id": "jobs-unknown",
+                    "name": "job_output",
+                    "arguments": "{\"job_id\": \"missing\"}"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/call",
+          "seq": 32,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "callId": "jobs-unknown",
+            "name": "job_output",
+            "arguments": "{\"job_id\": \"missing\"}"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/result",
+          "seq": 33,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "jobs-unknown"
+              },
+              "toolCallId": "jobs-unknown",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Error: unknown job missing"
+                }
+              ],
+              "isError": true,
+              "id": "{{messageId}}"
+            }
+          },
+          "sourceEventSeqs": [
+            32
+          ],
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 34,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 4
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 35,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 5
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 36,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool-call",
+                  "id": "jobs-remove",
+                  "name": "snapshot_remove_job",
+                  "arguments": "{}"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "tool-call"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "tool-call"
+                }
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-remove",
+                "name": "snapshot_remove_job",
+                "args": [
+                  ""
+                ]
+              },
+              {
+                "type": "tool-call-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "id": "jobs-remove",
+                "args": [
+                  "{}"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "tool-call",
+                    "id": "jobs-remove",
+                    "name": "snapshot_remove_job",
+                    "arguments": "{}"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/call",
+          "seq": 37,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "callId": "jobs-remove",
+            "name": "snapshot_remove_job",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/registered",
+          "seq": 38,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-2",
+              "kind": "bash",
+              "label": "python foreground job",
+              "owner": "{{parent}}",
+              "status": "running",
+              "startedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:2}}",
+            "terminalResult": "not-terminal"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/settled",
+          "seq": 39,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-2",
+              "kind": "bash",
+              "label": "python foreground job",
+              "owner": "{{parent}}",
+              "status": "completed",
+              "startedAt": 0,
+              "finishedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:2}}",
+            "terminalResult": "pending"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "jobs/collected",
+          "seq": 40,
+          "time": 0,
+          "data": {
+            "job": {
+              "id": "bash-2",
+              "kind": "bash",
+              "label": "python foreground job",
+              "owner": "{{parent}}",
+              "status": "completed",
+              "startedAt": 0,
+              "finishedAt": 0,
+              "output": {
+                "total": 14,
+                "earliest": 0
+              }
+            },
+            "registryEpoch": "{{job-epoch:1}}",
+            "instanceId": "{{job-instance:2}}",
+            "terminalResult": "collected",
+            "collection": "remove"
+          },
+          "ignorable": true
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "tool/result",
+          "seq": 41,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "jobs-remove"
+              },
+              "toolCallId": "jobs-remove",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "bash-2"
+                }
+              ],
+              "isError": false,
+              "id": "{{messageId}}"
+            }
+          },
+          "sourceEventSeqs": [
+            37
+          ],
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 42,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 5
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/start",
+          "seq": 43,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 6
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 44,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 6,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "JOBS_OBSERVATION_OK"
+                }
+              ],
+              "source": {
+                "kind": "model",
+                "provider": "deepseek-official",
+                "model": "smoke-model",
+                "replayState": {
+                  "response": {
+                    "kind": "deepseek-messages",
+                    "version": 1,
+                    "model": "smoke-model"
+                  },
+                  "blocks": [
+                    {
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "id": "{{messageId}}"
+            },
+            "usage": {
+              "inputTokens": 3,
+              "outputTokens": 3,
+              "totalTokens": 6
+            },
+            "stream": [
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-start",
+                  "index": 0,
+                  "blockType": "text"
+                }
+              },
+              {
+                "type": "text-chunks",
+                "time0": 0,
+                "index": 0,
+                "dt": [],
+                "texts": [
+                  "JOBS_OBSERVATION_OK"
+                ]
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "block-end",
+                  "index": 0,
+                  "block": {
+                    "type": "text",
+                    "text": "JOBS_OBSERVATION_OK"
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "usage",
+                  "usage": {
+                    "inputTokens": 3,
+                    "outputTokens": 3,
+                    "totalTokens": 6
+                  }
+                }
+              },
+              {
+                "type": "chunk",
+                "time": 0,
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "deepseek-messages",
+                      "version": 1,
+                      "model": "smoke-model"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "surfaceOp": "append"
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "step/end",
+          "seq": 45,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 6
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "turn/end",
+          "seq": 46,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.status",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "status": "idle"
+      }
+    }
+  ]
+}

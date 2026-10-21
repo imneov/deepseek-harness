@@ -245,6 +245,30 @@ def test_mock_model_serves_native_messages_events() -> None:
         assert next(event["delta"]["text"] for event in events if event["type"] == "content_block_delta") == SMOKE["EXPECTED_TEXT"]
 
 
+def test_job_snapshot_preserves_identity_and_collection_relationships() -> None:
+    records = [
+        {"type": "jobs/registered", "data": {"registryEpoch": "epoch-a", "instanceId": "instance-a"}},
+        {"type": "jobs/registered", "data": {"registryEpoch": "epoch-a", "instanceId": "instance-b"}},
+    ]
+    replacements = SMOKE["job_snapshot_replacements"](records)
+    normalize = SMOKE["normalize_snapshot_value"]
+    first = {"jobReceipt": {"registryEpoch": "epoch-a", "instanceId": "instance-a", "terminalRead": "first"}}
+    wrong = {"jobReceipt": {**first["jobReceipt"], "instanceId": "instance-b"}}
+    assert normalize(first, replacements) != normalize(wrong, replacements)
+    assert normalize(first, replacements) != normalize(
+        {"jobReceipt": {**first["jobReceipt"], "terminalRead": "repeat"}}, replacements,
+    )
+    collected = {"type": "jobs/collected", "data": {
+        "collection": "read", "instanceId": "instance-a", "job": {"startedAt": 123, "finishedAt": 456},
+    }}
+    assert normalize(collected, replacements) != normalize(
+        {**collected, "data": {**collected["data"], "collection": "remove"}}, replacements,
+    )
+    assert dict(replacements) == {
+        "epoch-a": "{{job-epoch:1}}", "instance-a": "{{job-instance:1}}", "instance-b": "{{job-instance:2}}",
+    }
+
+
 def test_advanced_snapshot_normalizes_catalog_child_creation_time() -> None:
     value = {
         "type": "subagent/catalog",
