@@ -58,7 +58,7 @@ kind: "package-reference"
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-jobs)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
-真实的 `job_output` 在文本与任务投影之外返回 `receipt`，并将其投影到标准工具结果 `meta.jobReceipt`：`registryEpoch`、`jobId`、`instanceId` 以及 `terminalRead`（`not-terminal`、`first` 或 `repeat`）。首次终态读取会收取空输出或纯流输出；重复读取确认注册表已收取，但不会再次发送 result。Session 日志记录收取事实，持久化的成功工具结果回执则记录经该次调用交付输出。两者都不证明模型准入、理解或业务验收。旧日志及策略生成的替换结果等缺失回执的情况表示未知；错误不携带虚构回执。
+真实的 `job_output` 在文本与任务投影之外返回 `receipt`，并将其投影到标准工具结果 `meta.jobReceipt`：`registryEpoch`、`jobId`、`instanceId` 以及 `terminalRead`（`not-terminal`、`first` 或 `repeat`）。首次终态读取会收取空输出或纯流输出；重复读取确认注册表已收取，但不会再次发送 result。Session 日志记录收取事实，持久化的成功工具结果回执则记录经该次调用交付输出。两者都不证明模型准入、理解或业务验收。旧日志及策略生成的替换结果等缺失回执的情况表示未知；错误不携带虚构回执。实际读取之前的拒绝或替换不会改变游标和待收取结果。真实读取之后替换 value 可以省略回执，但日志中的 `read` 收取事实仍已提交；后续读取是 repeat。
 
 ### 可能出什么问题
 

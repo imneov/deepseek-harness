@@ -498,6 +498,7 @@ describe('job_output', () => {
 
     const shortCircuited = await call(ctx, 'job_output', { job_id: 'bash-2' })
     expect(shortCircuited.isError).toBe(false)
+    expect(shortCircuited.meta ?? {}).not.toHaveProperty('jobReceipt')
     expect(Buffer.byteLength(text(shortCircuited))).toBeLessThanOrEqual(64)
     expect(text(shortCircuited)).toContain('[output truncated]')
 
@@ -538,6 +539,7 @@ describe('job_output', () => {
     expect((await call(ctx, 'job_output', { job_id: '' })).isError).toBe(true)
     const unknown = await call(ctx, 'job_output', { job_id: 'bash-99' })
     expect(unknown.isError).toBe(true)
+    expect(unknown.meta ?? {}).not.toHaveProperty('jobReceipt')
     expect(text(unknown)).toContain('unknown job bash-99')
   })
 })

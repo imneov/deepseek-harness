@@ -60,6 +60,115 @@ async function boot(): Promise<Context> {
   return ctx
 }
 
+async function terminalJob(ctx: Context, owner: SessionId) {
+  const id = ctx.jobs.start({
+    kind: 'bash', owner, label: 'unread receipt producer',
+    run: (job) => {
+      job.append('unread stream\n')
+      return { cancel: () => {}, done: Promise.resolve({ status: 'completed', result: 'unread final' }) }
+    },
+  })
+  await ctx.jobs.wait(id, 1000, owner)
+  return ctx.jobs.observe(id, owner)
+}
+
+async function persistedEvents(ctx: Context, owner: SessionId) {
+  const session = ctx.sessions.get(owner)
+  if (session === undefined) throw new Error(`missing session ${owner}`)
+  await ctx.sessions.flush(session)
+  const reader = await ctx.sessionPersistence.open(owner, 'read')
+  try { return (await reader.read()).events } finally { await reader.close() }
+}
+
+it.each(['deny', 'replace', 'unknown'] as const)('persists no receipt or collection for %s without reading the pending job', async (policy) => {
+  const ctx = await boot()
+  const adapter = new MockAdapter([
+    toolCallResponse('negative', 'job_output', { job_id: policy === 'unknown' ? 'missing' : 'bash-1' }),
+    textResponse('negative finished'),
+    toolCallResponse('actual', 'job_output', { job_id: 'bash-1' }),
+    textResponse('collected'),
+  ])
+  ctx.llm.registerAdapter(['mock'], adapter)
+  const agent = await ctx.agentLoop.create(SessionId(`negative-${policy}`), { provider: 'mock', model: 'mock' })
+  const pending = await terminalJob(ctx, agent.id)
+  let interceptions = 0
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    if (exec.callId !== 'negative' || policy !== 'deny') return next()
+    interceptions += 1
+    return { kind: 'deny', reason: 'job output denied' }
+  })
+  ctx.on('tools/execute', async (exec, next) => {
+    if (exec.callId !== 'negative' || policy !== 'replace') return next()
+    interceptions += 1
+    return {
+      content: [], isError: false,
+      value: { text: 'policy replacement', job: {
+        id: pending.job.id, kind: 'bash', label: 'policy job', status: 'completed', startedAt: 0,
+      } },
+    }
+  })
+  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Attempt the guarded read.' }], source: { kind: 'user' } }))
+  await agent.whenIdle()
+  expect(interceptions).toBe(policy === 'unknown' ? 0 : 1)
+  expect(ctx.jobs.observe(pending.job.id, agent.id)).toEqual(pending)
+  expect(pending.terminalResult).toBe('pending')
+  const before = await persistedEvents(ctx, agent.id)
+  const negative = before.filter(event => event.type === 'tool/result').map(event => event.data)
+  expect(negative).toHaveLength(1)
+  expect(negative[0]?.meta ?? {}).not.toHaveProperty('jobReceipt')
+  expect(negative[0]?.message.isError ?? false).toBe(policy !== 'replace')
+  expect(before.some(event => event.type === 'jobs/collected')).toBe(false)
+
+  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Read the pending output.' }], source: { kind: 'user' } }))
+  await agent.whenIdle()
+  const after = await persistedEvents(ctx, agent.id)
+  const actual = after.filter(event => event.type === 'tool/result').map(event => event.data)[1]
+  expect(actual?.meta).toEqual({ jobReceipt: {
+    registryEpoch: pending.registryEpoch, instanceId: pending.instanceId, jobId: pending.job.id, terminalRead: 'first',
+  } })
+  expect(actual?.message.content).toEqual([{ type: 'text', text: 'unread stream\nunread final\n[status: completed]' }])
+  expect(ctx.jobs.observe(pending.job.id, agent.id).terminalResult).toBe('collected')
+  expect(after.filter(event => event.type === 'jobs/collected')).toMatchObject([{ data: { collection: 'read' } }])
+})
+
+it('keeps actual collection when post-execute replaces the read value without a receipt', async () => {
+  const ctx = await boot()
+  const adapter = new MockAdapter([
+    toolCallResponse('post-replace', 'job_output', { job_id: 'bash-1' }),
+    toolCallResponse('repeat', 'job_output', { job_id: 'bash-1' }),
+    textResponse('collected before replacement'),
+  ])
+  ctx.llm.registerAdapter(['mock'], adapter)
+  const agent = await ctx.agentLoop.create(SessionId('post-read-replacement'), { provider: 'mock', model: 'mock' })
+  const pending = await terminalJob(ctx, agent.id)
+  let replacements = 0
+  ctx.on('tools/post-execute', async (exec, result, next) => {
+    if (exec.callId !== 'post-replace') return next()
+    replacements += 1
+    expect(ctx.jobs.observe(pending.job.id, agent.id).terminalResult).toBe('collected')
+    expect(result.meta).toEqual({ jobReceipt: {
+      registryEpoch: pending.registryEpoch, instanceId: pending.instanceId, jobId: pending.job.id, terminalRead: 'first',
+    } })
+    return { kind: 'accept', value: { text: 'policy replacement', job: {
+      id: pending.job.id, kind: 'bash', label: 'policy job', status: 'completed', startedAt: 0,
+    } } }
+  })
+  agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Read with a post policy.' }], source: { kind: 'user' } }))
+  await agent.whenIdle()
+  expect(replacements).toBe(1)
+  const events = await persistedEvents(ctx, agent.id)
+  const results = events.filter(event => event.type === 'tool/result').map(event => event.data)
+  expect(results).toHaveLength(2)
+  expect(results[0]?.meta ?? {}).not.toHaveProperty('jobReceipt')
+  expect(results[0]?.message.content).toEqual([{ type: 'text', text: 'policy replacement\n[status: completed]' }])
+  expect(results[1]?.meta).toEqual({ jobReceipt: {
+    registryEpoch: pending.registryEpoch, instanceId: pending.instanceId, jobId: pending.job.id, terminalRead: 'repeat',
+  } })
+  expect(results[1]?.message.content).toEqual([{ type: 'text', text: '(no new output)\n[status: completed]' }])
+  expect(events.filter(event => event.type === 'jobs/collected')).toMatchObject([{ data: { collection: 'read' } }])
+  expect(ctx.jobs.observe(pending.job.id, agent.id).terminalResult).toBe('collected')
+})
+
 it('persists real job_output receipts and owner lifecycle facts through Loader, loop, flush and reload', async () => {
   const ctx = await boot()
   const adapter = new MockAdapter([
