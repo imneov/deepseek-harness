@@ -614,6 +614,15 @@ declare class Session {
     ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []
     ): SessionEvent<T>;
   /**
+   * Append optional log-only metadata that readers unaware of its type may retain and ignore.
+   * Never use for facts needed to reconstruct model history. Default append remains required-on-read.
+   * Commits synchronously in memory; await the store's flush for configured persistence durability.
+   * @param type - a log-only event type; message-producing types are excluded.
+   * @param data - losslessly JSON-serializable payload, snapshotted before publication.
+   * @returns the committed event with an explicit ignorable marker.
+   */
+  appendIgnorable<T extends Exclude<SessionEventType, SurfaceEventType>>(type: T, data: SessionEventMap[T]): SessionEvent<T>;
+  /**
    * The {@link EpochHeader} in force after the log's last header event — the
    * header the NEXT request will be compared against — or undefined before
    * the first `request/header` snapshot. The live, incrementally-maintained
