@@ -28,22 +28,22 @@ baseline: false
 changes:
   - root: "event:jobs/collected"
     previous: null
-    after: "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa"
+    after: "f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871"
     decision: same-version
   - root: "event:jobs/registered"
     previous: null
-    after: "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad"
+    after: "fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632"
     decision: same-version
   - root: "event:jobs/settled"
     previous: null
-    after: "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac"
+    after: "21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6"
     decision: same-version
 ```
 
 <a id="compatibility"></a>
 ## Compatibility
 
-The three new log-only event roots are emitted with ignorable:true. Existing payloads and Session format generation remain unchanged. Older readers retain these unknown records without interpreting them. Missing records are unknown, never evidence of collection or model understanding. Synchronous job operations commit to memory; durability requires the existing Session flush barrier.
+The three new log-only event roots are emitted with ignorable:true. Existing payloads and Session format generation remain unchanged. Older readers retain these unknown records without interpreting them. Missing records are unknown, never evidence of collection or model understanding. Collection records distinguish terminal read from explicit foreground controller removal; teardown is never collection. Synchronous job operations commit to memory; durability requires the existing Session flush barrier.
 
 <a id="verification"></a>
 ## Verification

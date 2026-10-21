@@ -28,22 +28,22 @@ baseline: false
 changes:
   - root: "event:jobs/collected"
     previous: null
-    after: "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa"
+    after: "f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871"
     decision: same-version
   - root: "event:jobs/registered"
     previous: null
-    after: "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad"
+    after: "fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632"
     decision: same-version
   - root: "event:jobs/settled"
     previous: null
-    after: "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac"
+    after: "21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6"
     decision: same-version
 ```
 
 <a id="compatibility"></a>
 ## 兼容性
 
-三个新增仅日志事件均写入 ignorable:true。现有载荷和 Session 格式代次保持不变。旧读取方保留这些未知记录而不解释。记录缺失表示未知，不能证明收取或模型理解。同步作业操作仅提交内存，持久性需要现有 Session flush 屏障。
+三个新增仅日志事件均写入 ignorable:true。现有载荷和 Session 格式代次保持不变。旧读取方保留这些未知记录而不解释。记录缺失表示未知，不能证明收取或模型理解。收取记录区分终态读取和前台控制器显式移除，teardown 不表示收取。同步作业操作仅提交内存，持久性需要现有 Session flush 屏障。
 
 <a id="verification"></a>
 ## 验证

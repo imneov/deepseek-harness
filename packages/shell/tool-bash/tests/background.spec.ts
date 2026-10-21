@@ -244,16 +244,34 @@ describe('foreground commands as jobs', () => {
 
   it('a command that finishes within the wait returns the foreground result and leaves no job behind', async () => {
     const ctx = await setup()
-    const seen: string[] = []
-    ctx.jobs.events.subscribe({ owners: 'all' }, (event) => { seen.push(event.type === 'settled' ? `settled:${String(event.awaited)}` : event.type) })
-    const result = await call(ctx, { command: 'printf "done\\n"; printf "warn\\n" >&2', description: 'test command' })
-    expect(result.isError).toBe(false)
-    if (result.isError) throw new Error('expected a foreground result')
-    expect(result.value).toMatchObject({ kind: 'foreground', exitCode: 0, stdout: { text: 'done\n' }, stderr: { text: 'warn\n' } })
-    expect(text(result)).toBe('done\n[stderr]\nwarn\n')
-    expect(ctx.jobs.list()).toEqual([])
-    // Registered at the start, settled while awaited, removed with the result.
-    expect(seen.filter(type => type !== 'output')).toEqual(['registered', 'settled:true', 'removed'])
+    const id = SessionId('foreground-owner')
+    const owner: Agent = {
+      id, options: {}, session: Session.create(id), inbox: unsupportedInbox(), status: 'idle', ctx,
+      send: () => {}, followup: () => {}, steer: () => {}, inject: () => {}, cancel: () => {},
+      runMaintenance: task => task(new AbortController().signal), whenIdle: () => Promise.resolve(),
+    }
+    await ctx.agents.register(owner)
+    try {
+      const seen: string[] = []
+      ctx.jobs.events.subscribe({ owners: 'all' }, (event) => {
+        seen.push(event.type === 'settled' ? `settled:${String(event.awaited)}` : event.type)
+      })
+      const result = await ctx.tools.execute({
+        signal: testToolSignal, callId: ToolCallId('foreground-collected'), name: 'bash', agent: owner,
+        arguments: { command: 'printf "done\\n"; printf "warn\\n" >&2', description: 'test command' },
+      })
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected a foreground result')
+      expect(result.value).toMatchObject({ kind: 'foreground', exitCode: 0, stdout: { text: 'done\n' }, stderr: { text: 'warn\n' } })
+      expect(text(result)).toBe('done\n[stderr]\nwarn\n')
+      expect(ctx.jobs.list(owner.id)).toEqual([])
+      expect(seen.filter(type => type !== 'output')).toEqual(['registered', 'settled:true', 'removed'])
+      const journal = owner.session.snapshotEvents().filter(event => event.type.startsWith('jobs/'))
+      expect(journal.map(event => event.type)).toEqual(['jobs/registered', 'jobs/settled', 'jobs/collected'])
+      expect(journal.at(-1)).toMatchObject({ ignorable: true, data: { terminalResult: 'collected', collection: 'remove' } })
+    } finally {
+      await ctx.fiber.dispose()
+    }
   })
 
   it('a foreground command stopped from outside the call reports the reason instead of failing', async ({ task }) => {

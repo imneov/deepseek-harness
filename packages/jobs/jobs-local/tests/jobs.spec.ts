@@ -159,8 +159,30 @@ function scriptedSource(reads: { text: string; lossy?: boolean }[], channel?: 's
 }
 
 describe('LocalJobRegistry.observe', () => {
-  it('observes exact-owner terminal delivery without consuming output', async () => {
+  it.each(['completed', 'killed', 'failed'] as const)('collects an empty %s terminal output exactly once', async (status) => {
     const ctx = await harness()
+    const p = producer()
+    const id = ctx.jobs.start(p.spec)
+    try {
+      const running = ctx.jobs.read(id)
+      expect(running.receipt.terminalRead).toBe('not-terminal')
+      expect(ctx.jobs.observe(id).terminalResult).toBe('not-terminal')
+      p.settle({ status })
+      await ctx.jobs.wait(id, 1000)
+      expect(ctx.jobs.observe(id).terminalResult).toBe('pending')
+      expect(ctx.jobs.readAt(id, 0).chunks).toEqual([])
+      expect(ctx.jobs.observe(id).terminalResult).toBe('pending')
+      expect(ctx.jobs.read(id).receipt).toEqual({ ...running.receipt, terminalRead: 'first' })
+      expect(ctx.jobs.observe(id).terminalResult).toBe('collected')
+      expect(ctx.jobs.read(id).receipt).toEqual({ ...running.receipt, terminalRead: 'repeat' })
+    } finally {
+      p.settle({ status })
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('observes exact-owner terminal delivery without consuming output', async () => {
+    const ctx = await harness({ settledRetainBytes: 1 })
     let active: ReturnType<typeof producer> | undefined
     try {
       const owner = await liveAgent(ctx, 'observer-owner')
@@ -195,6 +217,8 @@ describe('LocalJobRegistry.observe', () => {
       expect(ctx.jobs.observe(id, owner.id)).toEqual(pending)
       expect(ctx.jobs.readAt(id, 0, owner.id).chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
       const first = ctx.jobs.read(id, owner.id)
+      const collected = owner.session.snapshotEvents().find(event => event.type === 'jobs/collected')
+      expect(collected?.data.job).toEqual(first.job)
       expect(first.result).toBe('final value')
       expect(first.chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
       expect(first.receipt).toEqual({
@@ -879,6 +903,7 @@ describe('LocalJobRegistry owner cleanup', () => {
 
     await disposeAgentScope(owner)
     expect(seen).toMatchObject([{ type: 'settled', cause: 'teardown', job: { status: 'killed' } }])
+    expect(owner.session.snapshotEvents().some(event => event.type === 'jobs/collected')).toBe(false)
   })
 
   it('attaches one cleanup per owner and drains all owned jobs with the scope', async () => {

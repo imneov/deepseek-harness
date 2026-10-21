@@ -352,6 +352,10 @@ export class LocalJobRegistry extends JobRegistry {
   remove(id: JobId, caller?: SessionId): void {
     const job = this.expect(id, caller)
     if (!isTerminal(job.status)) throw new Error(`job ${id} is still ${job.status}; kill it and wait for settlement before removing it`)
+    if (!job.resultDelivered) {
+      job.resultDelivered = true
+      this.journal(job, 'jobs/collected', 'remove')
+    }
     this.drop([job])
   }
 
@@ -449,10 +453,17 @@ export class LocalJobRegistry extends JobRegistry {
   }
 
   /** Journal publication cannot undo an already committed job or consume operation. */
-  private journal(job: TrackedJob, type: 'jobs/registered' | 'jobs/settled' | 'jobs/collected'): void {
+  private journal(
+    job: TrackedJob,
+    type: 'jobs/registered' | 'jobs/settled' | 'jobs/collected',
+    collection?: 'read' | 'remove',
+  ): void {
     if (job.owner === undefined) return
     try {
-      job.owner.session.appendIgnorable(type, this.observe(job.id, job.owner.id))
+      job.owner.session.appendIgnorable(type, {
+        ...this.observe(job.id, job.owner.id),
+        ...collection === undefined ? {} : { collection },
+      })
     } catch (error: unknown) {
       this.selfCtx.logger.warn(`jobs: ${type} journal for ${job.id} failed: ${String(error)}`)
     }
@@ -472,11 +483,9 @@ export class LocalJobRegistry extends JobRegistry {
     job.modelCursor = job.ring.total
     const terminalRead = !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'repeat' : 'first'
     const result = terminalRead === 'first' ? job.result : undefined
-    if (terminalRead === 'first') {
-      job.resultDelivered = true
-      this.journal(job, 'jobs/collected')
-    }
+    if (terminalRead === 'first') job.resultDelivered = true
     if (isTerminal(job.status)) job.ring.trim(this.settledRetainBytes)
+    if (terminalRead === 'first') this.journal(job, 'jobs/collected', 'read')
     return {
       receipt: { registryEpoch: this.registryEpoch, jobId: job.id, instanceId: job.instanceId, terminalRead },
       chunks: read.chunks,

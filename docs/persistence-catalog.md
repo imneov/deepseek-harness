@@ -42,9 +42,9 @@ The [format references](persistence-changes/historical-formats/README.md) cover 
 | `event:hook/invoked` | event | `8a6e1ec9e8db346b0e02f027db73c07a94f067a26d40c1aef1abd09c47ce7ba0` | [`{ type: "hook/invoked" }`](#persistence-type-sha256-8a6e1ec9e8db346b0e02f027db73c07a94f067a26d40c1aef1abd09c47ce7ba0) |
 | `event:hook/result` | event | `e75916628f3f10c2d50658bd143052a46285fbf1a9a700ba54947614603d26b4` | [`{ type: "hook/result" }`](#persistence-type-sha256-e75916628f3f10c2d50658bd143052a46285fbf1a9a700ba54947614603d26b4) |
 | `event:image/offload` | event | `b222069eea2d768065161c1147b1f2c78c1b54328c84b3586ae5c8f91b8ed35e` | [`{ type: "image/offload" }`](#persistence-type-sha256-b222069eea2d768065161c1147b1f2c78c1b54328c84b3586ae5c8f91b8ed35e) |
-| `event:jobs/collected` | event | `ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa` | [`{ type: "jobs/collected" }`](#persistence-type-sha256-ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa) |
-| `event:jobs/registered` | event | `f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad` | [`{ type: "jobs/registered" }`](#persistence-type-sha256-f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad) |
-| `event:jobs/settled` | event | `9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac` | [`{ type: "jobs/settled" }`](#persistence-type-sha256-9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac) |
+| `event:jobs/collected` | event | `f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871` | [`{ type: "jobs/collected" }`](#persistence-type-sha256-f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871) |
+| `event:jobs/registered` | event | `fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632` | [`{ type: "jobs/registered" }`](#persistence-type-sha256-fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632) |
+| `event:jobs/settled` | event | `21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6` | [`{ type: "jobs/settled" }`](#persistence-type-sha256-21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6) |
 | `event:llm/retry` | event | `525254db03b1d1e6b74cf55aced52817568331ac1f96c0818728910b6692e336` | [`{ type: "llm/retry" }`](#persistence-type-sha256-525254db03b1d1e6b74cf55aced52817568331ac1f96c0818728910b6692e336) |
 | `event:llm/retry-started` | event | `48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3` | [`{ type: "llm/retry-started" }`](#persistence-type-sha256-48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3) |
 | `event:model/selection` | event | `35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc` | [`{ type: "model/selection" }`](#persistence-type-sha256-35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc) |
@@ -634,11 +634,11 @@ Source: [`packages/compaction/compaction-image-offload/src/projection.ts:25`](..
 #### `jobs/collected` — log-only
 
 ```ts persistence-catalog
-/** First terminal read handed output to a caller; does not imply model understanding. */
+/** Terminal read or explicit foreground removal acknowledged collection; never model understanding. */
 'jobs/collected': JobObservationRecord
 ```
 
-Source: [`packages/jobs/jobs/src/types.ts:180`](../packages/jobs/jobs/src/types.ts)
+Source: [`packages/jobs/jobs/src/types.ts:183`](../packages/jobs/jobs/src/types.ts)
 
 <a id="jobsregistered--log-only"></a>
 
@@ -649,7 +649,7 @@ Source: [`packages/jobs/jobs/src/types.ts:180`](../packages/jobs/jobs/src/types.
 'jobs/registered': JobObservationRecord
 ```
 
-Source: [`packages/jobs/jobs/src/types.ts:176`](../packages/jobs/jobs/src/types.ts)
+Source: [`packages/jobs/jobs/src/types.ts:179`](../packages/jobs/jobs/src/types.ts)
 
 <a id="jobssettled--log-only"></a>
 
@@ -660,7 +660,7 @@ Source: [`packages/jobs/jobs/src/types.ts:176`](../packages/jobs/jobs/src/types.
 'jobs/settled': JobObservationRecord
 ```
 
-Source: [`packages/jobs/jobs/src/types.ts:178`](../packages/jobs/jobs/src/types.ts)
+Source: [`packages/jobs/jobs/src/types.ts:181`](../packages/jobs/jobs/src/types.ts)
 
 ### `llm/*`
 
@@ -2273,6 +2273,14 @@ SHA-256: `4edec1b770e8ec4ce1220bf42edc5ac46713a1b48d4caa778dcfc98bad1f28a3`
 
 `"ptc-mode"`
 
+<a id="persistence-type-sha256-f35369370732d3517cae1d8ecb6a00cddd1c43788597bdb1358247affc4ba6f6"></a>
+
+### `"read"`
+
+SHA-256: `f35369370732d3517cae1d8ecb6a00cddd1c43788597bdb1358247affc4ba6f6`
+
+`"read"`
+
 <a id="persistence-type-sha256-12a0cfa619ac4a5fc6c3e8e359c8dae15769edc61497a575935c78d5842f8e42"></a>
 
 ### `"read-only"`
@@ -3755,24 +3763,21 @@ One of:
 - `"next-step"`
 - `"next-turn"`
 
-<a id="persistence-type-sha256-92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89"></a>
-
-<a id="persistence-type-jobobservation"></a>
+<a id="persistence-type-sha256-d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b"></a>
 
 <a id="persistence-type-jobobservationrecord"></a>
 
-<a id="persistence-type-packagesjobsjobssrctypestsjobobservation"></a>
-
 <a id="persistence-type-packagesjobsjobssrctypestsjobobservationrecord"></a>
 
-### `JobObservation`
+### `JobObservationRecord`
 
-SHA-256: `92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89`
+SHA-256: `d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b`
 
-Sources: [`packages/jobs/jobs/src/types.ts:162`](../packages/jobs/jobs/src/types.ts) · [`packages/jobs/jobs/src/types.ts:171`](../packages/jobs/jobs/src/types.ts)
+Sources: [`packages/jobs/jobs/src/types.ts:171`](../packages/jobs/jobs/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
+| `collection` | optional | [`union (2 variants)`](#persistence-type-sha256-81332e20332e81467970dc38d3e54cb640a4b743afcb89da267ed468dc937bd9) |
 | `instanceId` | required | `string` |
 | `job` | required | [`JobView`](#persistence-type-sha256-6b009258cbca9adc6fb01bbf020e27f3e5fb99f3c0e0f385842683e2d62fd457) |
 | `registryEpoch` | required | `string` |
@@ -5589,6 +5594,17 @@ One of:
 
 - `"fork"`
 - `"fresh"`
+
+<a id="persistence-type-sha256-81332e20332e81467970dc38d3e54cb640a4b743afcb89da267ed468dc937bd9"></a>
+
+### `union (2 variants)`
+
+SHA-256: `81332e20332e81467970dc38d3e54cb640a4b743afcb89da267ed468dc937bd9`
+
+One of:
+
+- `"read"`
+- `"remove"`
 
 <a id="persistence-type-sha256-9947aa5938fe19a895298da412917acbf9ffb5093a73ab8baa257e6ae9e63a07"></a>
 
@@ -8247,49 +8263,49 @@ SHA-256: `b222069eea2d768065161c1147b1f2c78c1b54328c84b3586ae5c8f91b8ed35e`
 | `time` | required | `number` |
 | `type` | required | `"image/offload"` |
 
-<a id="persistence-type-sha256-ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa"></a>
+<a id="persistence-type-sha256-f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871"></a>
 
 <a id="persistence-type-eventjobscollected"></a>
 
 ### `{ type: "jobs/collected" }`
 
-SHA-256: `ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa`
+SHA-256: `f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871`
 
 | Property | Presence | Type |
 |---|---|---|
-| `data` | required | [`JobObservation`](#persistence-type-sha256-92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89) |
+| `data` | required | [`JobObservationRecord`](#persistence-type-sha256-d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b) |
 | `ignorable` | optional | `true` |
 | `seq` | required | `number` |
 | `time` | required | `number` |
 | `type` | required | `"jobs/collected"` |
 
-<a id="persistence-type-sha256-f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad"></a>
+<a id="persistence-type-sha256-fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632"></a>
 
 <a id="persistence-type-eventjobsregistered"></a>
 
 ### `{ type: "jobs/registered" }`
 
-SHA-256: `f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad`
+SHA-256: `fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632`
 
 | Property | Presence | Type |
 |---|---|---|
-| `data` | required | [`JobObservation`](#persistence-type-sha256-92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89) |
+| `data` | required | [`JobObservationRecord`](#persistence-type-sha256-d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b) |
 | `ignorable` | optional | `true` |
 | `seq` | required | `number` |
 | `time` | required | `number` |
 | `type` | required | `"jobs/registered"` |
 
-<a id="persistence-type-sha256-9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac"></a>
+<a id="persistence-type-sha256-21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6"></a>
 
 <a id="persistence-type-eventjobssettled"></a>
 
 ### `{ type: "jobs/settled" }`
 
-SHA-256: `9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac`
+SHA-256: `21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6`
 
 | Property | Presence | Type |
 |---|---|---|
-| `data` | required | [`JobObservation`](#persistence-type-sha256-92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89) |
+| `data` | required | [`JobObservationRecord`](#persistence-type-sha256-d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b) |
 | `ignorable` | optional | `true` |
 | `seq` | required | `number` |
 | `time` | required | `number` |

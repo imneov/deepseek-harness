@@ -192,7 +192,9 @@ export abstract class JobRegistry extends Service {
    * Drop one settled job's record from the visible set and announce
    * `removed`. For a caller that collected the terminal state through its own
    * {@link wait} and never handed the id to the model, such as a shell tool's
-   * foreground call. Throws for a job that is still live, unknown, or foreign.
+   * foreground call. Records collection with source `remove` before dropping an unread
+   * terminal record; owner/service teardown is not a collection acknowledgement.
+   * Throws for a job that is still live, unknown, or foreign.
    * @param id - settled job to drop.
    * @param caller - removing session checked against the owner.
    */

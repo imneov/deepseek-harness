@@ -10310,7 +10310,7 @@
       "kind": "event",
       "event": "jobs/collected",
       "surface": false,
-      "digest": "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa",
+      "digest": "f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871",
       "schema": {
         "root": 0,
         "nodes": [
@@ -10324,22 +10324,22 @@
               },
               {
                 "name": "ignorable",
-                "type": 17,
+                "type": 20,
                 "optional": true
               },
               {
                 "name": "seq",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "time",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "type",
-                "type": 18,
+                "type": 21,
                 "optional": false
               }
             ],
@@ -10349,27 +10349,47 @@
             "kind": "object",
             "properties": [
               {
-                "name": "instanceId",
+                "name": "collection",
                 "type": 2,
+                "optional": true
+              },
+              {
+                "name": "instanceId",
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "job",
-                "type": 3,
+                "type": 6,
                 "optional": false
               },
               {
                 "name": "registryEpoch",
-                "type": 2,
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "terminalResult",
-                "type": 13,
+                "type": 16,
                 "optional": false
               }
             ],
             "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "read"
+          },
+          {
+            "kind": "literal",
+            "value": "remove"
           },
           {
             "kind": "primitive",
@@ -10380,57 +10400,57 @@
             "properties": [
               {
                 "name": "detail",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "finishedAt",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "id",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "kind",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "label",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "output",
                 "type": 5,
                 "optional": false
               },
               {
+                "name": "kind",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 8,
+                "optional": false
+              },
+              {
                 "name": "outputLimitBytes",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "owner",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "progress",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "startedAt",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "status",
-                "type": 7,
+                "type": 10,
                 "optional": false
               }
             ],
@@ -10445,17 +10465,17 @@
             "properties": [
               {
                 "name": "earliest",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "spillPaths",
-                "type": 6,
+                "type": 9,
                 "optional": true
               },
               {
                 "name": "total",
-                "type": 4,
+                "type": 7,
                 "optional": false
               }
             ],
@@ -10463,16 +10483,16 @@
           },
           {
             "kind": "array",
-            "element": 2
+            "element": 5
           },
           {
             "kind": "union",
             "types": [
-              8,
-              9,
-              10,
               11,
-              12
+              12,
+              13,
+              14,
+              15
             ]
           },
           {
@@ -10498,9 +10518,9 @@
           {
             "kind": "union",
             "types": [
-              14,
-              15,
-              16
+              17,
+              18,
+              19
             ]
           },
           {
@@ -10531,7 +10551,7 @@
       "kind": "event",
       "event": "jobs/registered",
       "surface": false,
-      "digest": "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad",
+      "digest": "fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632",
       "schema": {
         "root": 0,
         "nodes": [
@@ -10545,22 +10565,22 @@
               },
               {
                 "name": "ignorable",
-                "type": 17,
+                "type": 20,
                 "optional": true
               },
               {
                 "name": "seq",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "time",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "type",
-                "type": 18,
+                "type": 21,
                 "optional": false
               }
             ],
@@ -10570,27 +10590,47 @@
             "kind": "object",
             "properties": [
               {
-                "name": "instanceId",
+                "name": "collection",
                 "type": 2,
+                "optional": true
+              },
+              {
+                "name": "instanceId",
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "job",
-                "type": 3,
+                "type": 6,
                 "optional": false
               },
               {
                 "name": "registryEpoch",
-                "type": 2,
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "terminalResult",
-                "type": 13,
+                "type": 16,
                 "optional": false
               }
             ],
             "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "read"
+          },
+          {
+            "kind": "literal",
+            "value": "remove"
           },
           {
             "kind": "primitive",
@@ -10601,57 +10641,57 @@
             "properties": [
               {
                 "name": "detail",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "finishedAt",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "id",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "kind",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "label",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "output",
                 "type": 5,
                 "optional": false
               },
               {
+                "name": "kind",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 8,
+                "optional": false
+              },
+              {
                 "name": "outputLimitBytes",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "owner",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "progress",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "startedAt",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "status",
-                "type": 7,
+                "type": 10,
                 "optional": false
               }
             ],
@@ -10666,17 +10706,17 @@
             "properties": [
               {
                 "name": "earliest",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "spillPaths",
-                "type": 6,
+                "type": 9,
                 "optional": true
               },
               {
                 "name": "total",
-                "type": 4,
+                "type": 7,
                 "optional": false
               }
             ],
@@ -10684,16 +10724,16 @@
           },
           {
             "kind": "array",
-            "element": 2
+            "element": 5
           },
           {
             "kind": "union",
             "types": [
-              8,
-              9,
-              10,
               11,
-              12
+              12,
+              13,
+              14,
+              15
             ]
           },
           {
@@ -10719,9 +10759,9 @@
           {
             "kind": "union",
             "types": [
-              14,
-              15,
-              16
+              17,
+              18,
+              19
             ]
           },
           {
@@ -10752,7 +10792,7 @@
       "kind": "event",
       "event": "jobs/settled",
       "surface": false,
-      "digest": "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac",
+      "digest": "21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6",
       "schema": {
         "root": 0,
         "nodes": [
@@ -10766,22 +10806,22 @@
               },
               {
                 "name": "ignorable",
-                "type": 17,
+                "type": 20,
                 "optional": true
               },
               {
                 "name": "seq",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "time",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "type",
-                "type": 18,
+                "type": 21,
                 "optional": false
               }
             ],
@@ -10791,27 +10831,47 @@
             "kind": "object",
             "properties": [
               {
-                "name": "instanceId",
+                "name": "collection",
                 "type": 2,
+                "optional": true
+              },
+              {
+                "name": "instanceId",
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "job",
-                "type": 3,
+                "type": 6,
                 "optional": false
               },
               {
                 "name": "registryEpoch",
-                "type": 2,
+                "type": 5,
                 "optional": false
               },
               {
                 "name": "terminalResult",
-                "type": 13,
+                "type": 16,
                 "optional": false
               }
             ],
             "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "read"
+          },
+          {
+            "kind": "literal",
+            "value": "remove"
           },
           {
             "kind": "primitive",
@@ -10822,57 +10882,57 @@
             "properties": [
               {
                 "name": "detail",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "finishedAt",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "id",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "kind",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "label",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "output",
                 "type": 5,
                 "optional": false
               },
               {
+                "name": "kind",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 8,
+                "optional": false
+              },
+              {
                 "name": "outputLimitBytes",
-                "type": 4,
+                "type": 7,
                 "optional": true
               },
               {
                 "name": "owner",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "progress",
-                "type": 2,
+                "type": 5,
                 "optional": true
               },
               {
                 "name": "startedAt",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "status",
-                "type": 7,
+                "type": 10,
                 "optional": false
               }
             ],
@@ -10887,17 +10947,17 @@
             "properties": [
               {
                 "name": "earliest",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "spillPaths",
-                "type": 6,
+                "type": 9,
                 "optional": true
               },
               {
                 "name": "total",
-                "type": 4,
+                "type": 7,
                 "optional": false
               }
             ],
@@ -10905,16 +10965,16 @@
           },
           {
             "kind": "array",
-            "element": 2
+            "element": 5
           },
           {
             "kind": "union",
             "types": [
-              8,
-              9,
-              10,
               11,
-              12
+              12,
+              13,
+              14,
+              15
             ]
           },
           {
@@ -10940,9 +11000,9 @@
           {
             "kind": "union",
             "types": [
-              14,
-              15,
-              16
+              17,
+              18,
+              19
             ]
           },
           {
@@ -23012,6 +23072,11 @@
       ]
     },
     {
+      "digest": "21825e1160f3e8f81061e11b444f3ddc4389d3cdc8bcd26969672b750c3797a6",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "21fb6a90d5068f6a0003b7ab316ed2f56342477146a65c00db0f13c4d8df667d",
       "names": [],
       "sources": []
@@ -24404,6 +24469,11 @@
       "sources": []
     },
     {
+      "digest": "81332e20332e81467970dc38d3e54cb640a4b743afcb89da267ed468dc937bd9",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "814d9434e1ddf9078612b3b34322f26e9363b469213335007f7e9ba7fee9464e",
       "names": [
         "packages/llm/llm/src/types.ts#ReasoningBlock"
@@ -24645,17 +24715,6 @@
       "sources": []
     },
     {
-      "digest": "92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89",
-      "names": [
-        "packages/jobs/jobs/src/types.ts#JobObservation",
-        "packages/jobs/jobs/src/types.ts#JobObservationRecord"
-      ],
-      "sources": [
-        "packages/jobs/jobs/src/types.ts:162",
-        "packages/jobs/jobs/src/types.ts:171"
-      ]
-    },
-    {
       "digest": "930a6567a10bb62ddd157bd8abdf4b182810c8c3b49d91309b3b009a5fed9731",
       "names": [],
       "sources": [
@@ -24797,11 +24856,6 @@
       "sources": [
         "packages/core/session/src/types.ts:240"
       ]
-    },
-    {
-      "digest": "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac",
-      "names": [],
-      "sources": []
     },
     {
       "digest": "9ac52f0f84fec2eb9f71c2937e497d759db5ca0da4836d93a679d113684141f2",
@@ -25604,6 +25658,15 @@
       "sources": []
     },
     {
+      "digest": "d5424c0238904cdd0833c349f4a15ee2888cd6b6704afbf9e4e7a9ef342caf5b",
+      "names": [
+        "packages/jobs/jobs/src/types.ts#JobObservationRecord"
+      ],
+      "sources": [
+        "packages/jobs/jobs/src/types.ts:171"
+      ]
+    },
+    {
       "digest": "d595ec73b32b016a6055333c67a5d646032b22e672da1d4a09c5b1ae398a093a",
       "names": [],
       "sources": []
@@ -25885,11 +25948,6 @@
       ]
     },
     {
-      "digest": "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa",
-      "names": [],
-      "sources": []
-    },
-    {
       "digest": "edbbfff1128099fda7b792c56330d2cb04debc9790988e66d1c3f4026e813e0e",
       "names": [],
       "sources": []
@@ -26004,12 +26062,12 @@
       ]
     },
     {
-      "digest": "f4a66f654996c093aae700ea4c434ff2ee3569fea9c0e5813ccf6afdccabd163",
+      "digest": "f35369370732d3517cae1d8ecb6a00cddd1c43788597bdb1358247affc4ba6f6",
       "names": [],
       "sources": []
     },
     {
-      "digest": "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad",
+      "digest": "f4a66f654996c093aae700ea4c434ff2ee3569fea9c0e5813ccf6afdccabd163",
       "names": [],
       "sources": []
     },
@@ -26054,6 +26112,11 @@
     },
     {
       "digest": "f7283223aacdc39b0adca728c8cbd4c090a20006a6fecec74421c30e943b489c",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "f76ad6d72d4df8e9295acb820368b1e23178f1bb29c03a90e35f0c1fc7b1c871",
       "names": [],
       "sources": []
     },
@@ -26163,6 +26226,11 @@
     },
     {
       "digest": "fe792a6cd430494503837e21e79f91677704ccdd9e870c679aabd7d43ed47ddd",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "fe8df306db98012b6c46c4af81a5330e23831f2b69f0d4ddc5f4573f1b5e3632",
       "names": [],
       "sources": []
     },

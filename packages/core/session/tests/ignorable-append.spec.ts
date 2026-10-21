@@ -15,7 +15,7 @@ describe('Session.appendIgnorable', () => {
     const restored = Session.create(SessionId('journal-reader'), session.snapshotEvents())
     expect(restored.snapshotEvents()[0]).toEqual(event)
     expect(restored.deriveMessages()).toEqual([])
-    const required = session.append('session/title', { title: 'required' })
+    const required = session.append('turn/start', { turn: 1 })
     expect(required.ignorable).toBeUndefined()
     if (false) {
       // @ts-expect-error -- model-producing events cannot be marked ignorable by this log-only API.

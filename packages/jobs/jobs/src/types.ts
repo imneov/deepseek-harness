@@ -168,7 +168,10 @@ export interface JobObservation {
 }
 
 /** Optional owner-session journal payload; durability follows the standard Session flush barrier. */
-export type JobObservationRecord = JobObservation
+export interface JobObservationRecord extends JobObservation {
+  /** Present only for collected: terminal read, or the controller's explicit foreground collection acknowledgement. */
+  readonly collection?: 'read' | 'remove'
+}
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
@@ -176,7 +179,7 @@ declare module '@deepseek-ai/dsh-session/types' {
     'jobs/registered': JobObservationRecord
     /** Terminal registry state; does not imply delivery or process survival after restart. */
     'jobs/settled': JobObservationRecord
-    /** First terminal read handed output to a caller; does not imply model understanding. */
+    /** Terminal read or explicit foreground removal acknowledged collection; never model understanding. */
     'jobs/collected': JobObservationRecord
   }
 }

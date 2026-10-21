@@ -10,6 +10,22 @@ const otherId = '66666666-6666-4666-8666-666666666666'
 const proseUuid = '77777777-7777-4777-8777-777777777777'
 
 describe('session snapshot identity redaction', () => {
+  it('preserves job epoch and instance relationships across lifecycle facts and tool receipts', () => {
+    const records = [
+      { type: 'session', id: parentId },
+      { type: 'jobs/registered', data: { registryEpoch: childId, instanceId: messageId } },
+      { type: 'tool/result', data: { meta: { jobReceipt: {
+        registryEpoch: childId, instanceId: messageId, jobId: 'bash-1', terminalRead: 'first',
+      } } } },
+      { type: 'jobs/registered', data: { registryEpoch: approvalId, instanceId: runId } },
+    ]
+    const [output] = redactSessionSnapshotIds([records.map(record => JSON.stringify(record)).join('\n')])
+    expect(output).toContain('"registryEpoch":"{{id:1}}"')
+    expect(output?.match(/"instanceId":"{{id:2}}"/g)).toHaveLength(2)
+    expect(output).toContain('"registryEpoch":"{{id:3}}"')
+    expect(output).toContain('"jobId":"bash-1"')
+    expect(redactSessionSnapshotIds([output!])).toEqual([output])
+  })
   it('preserves feedback versions and target relationships without redacting unrelated prose', () => {
     const source = [
       { type: 'session', id: parentId },

@@ -43,7 +43,7 @@ async function boot(): Promise<Context> {
   ])
   const config = join(root, 'cordis.yml')
   await writeFile(config, JSON.stringify([...modules.keys()].map(name => ({
-    name,
+    name: `cordis:${name}`,
     ...name === '@deepseek-ai/dsh-session-persistence-jsonl'
       ? { config: { root: join(root!, 'sessions'), compression: 'none' } }
       : name === '@deepseek-ai/dsh-agent-loop' ? { config: { agents: [] } }
@@ -54,13 +54,7 @@ async function boot(): Promise<Context> {
   ctx.baseUrl = pathToFileURL(root).href + '/'
   await ctx.plugin(Loader)
   ctx.loader.builtins.include = Include
-  ctx.loader.internal = {
-    version: 'v2',
-    async import(specifier: string) {
-      if (!modules.has(specifier)) throw new Error(`unexpected Loader import: ${specifier}`)
-      return modules.get(specifier)
-    },
-  } as NonNullable<typeof ctx.loader.internal>
+  for (const [specifier, plugin] of modules) ctx.loader.builtins[specifier] = plugin
   await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(config).href } })
   await ctx.loader.await()
   return ctx
