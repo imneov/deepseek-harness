@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
@@ -662,6 +662,45 @@ describe('LocalJobRegistry.wait', () => {
     controller.abort()
     await expect(wait).rejects.toThrow('wait aborted')
     expect(seen).toMatchObject([{ type: 'settled', cause: 'producer', job: { id, status: 'completed' } }])
+  })
+
+  it('keeps an owned terminal wait awaited when its settled journal listener aborts', async () => {
+    const ctx = await harness({ settledRetainBytes: 4 })
+    await ctx.plugin(SessionStore)
+    const owner = await liveAgent(ctx, 'settled-journal-owner')
+    ctx.effect(() => ctx.sessions.enter(owner.session))
+    ctx.sessions.announce(owner.session)
+    const p = producer({ owner })
+    const controller = new AbortController()
+    const seen = collect(ctx, { owner: owner.id }, ['settled'])
+    let callbacks = 0
+    ctx.on('session/event', (session, event) => {
+      if (session !== owner.session || event.type !== 'jobs/settled') return
+      callbacks += 1
+      expect(ctx.jobs.observe(event.data.job.id, owner.id)).toMatchObject({
+        terminalResult: 'pending', job: { status: 'completed' },
+      })
+      controller.abort()
+    })
+    try {
+      const id = ctx.jobs.start(p.spec)
+      p.job().append('retained stream')
+      ctx.jobs.read(id, owner.id)
+      const wait = ctx.jobs.wait(id, 5_000, owner.id, controller.signal)
+      p.settle({ status: 'completed', detail: 'exit code: 0' })
+      const outcome = await wait.catch((error: unknown) => error)
+      expect(callbacks).toBe(1)
+      expect(controller.signal.aborted).toBe(true)
+      expect(outcome).toMatchObject({ status: 'completed', output: { total: 15, earliest: 11 } })
+      expect(seen).toMatchObject([{ type: 'settled', awaited: true }])
+      expect(owner.session.snapshotEvents()).toContainEqual(expect.objectContaining({
+        type: 'jobs/settled', ignorable: true,
+        data: expect.objectContaining({ job: expect.objectContaining({ status: 'completed', output: { total: 15, earliest: 11 } }) }),
+      }))
+    } finally {
+      p.settle({ status: 'completed' })
+      await ctx.fiber.dispose()
+    }
   })
 
   it('an abort landing after settlement still delivers the terminal projection it owes', async () => {

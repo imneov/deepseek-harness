@@ -636,11 +636,11 @@ export class LocalJobRegistry extends JobRegistry {
     // cursor has not consumed. A job that finishes before its first model
     // read keeps everything the live cap retained until that read.
     job.ring.trim(Math.max(this.settledRetainBytes, job.ring.total - job.modelCursor))
-    this.journal(job, 'jobs/settled')
     const waitResolvers = [...job.waitResolvers]
     job.waitResolvers.clear()
     for (const resolveWait of waitResolvers) resolveWait()
     job.markSettled()
+    this.journal(job, 'jobs/settled')
     this.emit({ type: 'settled', job: this.view(job), cause, awaited: waitResolvers.length > 0 }, job.owner)
     // The ring's stream ends with settlement; the signal follows the committed
     // settlement so an observer that wakes on it reads the terminal state.

@@ -97,7 +97,7 @@ This section explains the design decisions behind the registry and points at the
 
 ### Admission and settlement
 
-`activeJobCount` counts authoritative records per exact owner or in the shared unowned bucket. `settle` records the terminal outcome once (merging a recorded kill reason into a `killed` detail), clears the progress line, trims the ring to the settled cap (keeping every byte the model cursor has not consumed), resolves every waiter, then emits `settled` with its cause and the ring's final `output` signal. The cause is `kill` after `JobRegistry.kill`, `teardown` after an owner or service cancel, and `producer` otherwise; `dsh-tool-jobs` uses it to skip notices nobody can read.
+`activeJobCount` counts authoritative records per exact owner or in the shared unowned bucket. `settle` records the terminal outcome once (merging a recorded kill reason into a `killed` detail), clears the progress line, trims the ring to the settled cap (keeping every byte the model cursor has not consumed), resolves every waiter and detaches its cancellation listener before publishing the `jobs/settled` journal or live `settled` event, then emits the ring's final `output` signal. The cause is `kill` after `JobRegistry.kill`, `teardown` after an owner or service cancel, and `producer` otherwise; `dsh-tool-jobs` uses it to skip notices nobody can read.
 
 ### Teardown
 
