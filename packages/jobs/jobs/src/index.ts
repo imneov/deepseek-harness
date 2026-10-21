@@ -12,7 +12,7 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { installJobArchiveAdmission } from './archive-admission.ts'
-import type { JobEvents, JobId, JobOutputRead, JobRead, JobSpec, JobView } from './types.ts'
+import type { JobEvents, JobId, JobObservation, JobOutputRead, JobRead, JobSpec, JobView } from './types.ts'
 
 export { JobId } from './types.ts'
 export type {
@@ -28,6 +28,10 @@ export type {
   JobKind,
   JobKindMap,
   JobOutcome,
+  JobObservation,
+  JobReadReceipt,
+  JobRegistryEpoch,
+  JobInstanceId,
   JobOutputRead,
   JobOutputSource,
   JobRead,
@@ -124,6 +128,17 @@ export abstract class JobRegistry extends Service {
    * @returns a fresh projection.
    */
   abstract get(id: JobId, caller?: SessionId): JobView
+
+  /**
+   * Observe identity and terminal collection without moving the cursor or collecting a result.
+   * Unlike list/get, ownership must match exactly: a session cannot observe unowned work.
+   * Throws for an unknown id or a mismatched owner. A missing historical receipt is unknown,
+   * never evidence of collection. Compare epoch and instance as well as the job id after restart.
+   * @param id - job to observe.
+   * @param caller - exact owner; omission selects only unowned jobs.
+   * @returns fresh state and stable identity for this registry lifetime and registration.
+   */
+  abstract observe(id: JobId, caller?: SessionId): JobObservation
 
   /**
    * Consume the ring from the model cursor and advance it to the current

@@ -50,6 +50,8 @@ A producer can start work only while a controller that serves the owner is attac
 
 Loading these two plugins on a harness base that already provides the agent, tools, and system-prompt services gives the full feature: `dsh-jobs-local` provides the in-process background-job registry, and `dsh-tool-jobs` provides the `job_output`, `job_list`, and `job_kill` tools plus completion-notice delivery.
 
+`observe(id, caller)` requires an exact owner match, including rejection of unowned jobs for a session caller. It returns `job`, a registry-lifetime `registryEpoch`, a registration-specific `instanceId`, and `terminalResult`: `not-terminal`, `pending`, or `collected`. It changes neither the consuming cursor nor result delivery. The first terminal `read`, including empty or stream-only output, changes pending to collected and returns a stable `receipt` with `terminalRead: first`; later reads report `repeat`. Collection means output was handed to a reader, not model understanding or business acceptance. Missing historical receipts are unknown. Compare epoch and instance as well as job id; a replacement registry may reuse readable ids.
+
 ### What can go wrong
 
 Any preflight rejection leaves no job id or registered work. Jobs managed by the shipped in-process registry die with the harness process; durable execution across restarts needs a different backend implementing this contract.

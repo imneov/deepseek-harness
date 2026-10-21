@@ -39,8 +39,10 @@ class ScriptedJobRegistry extends JobRegistry {
     return this.view(row)
   }
 
-  read(id: JobId): JobRead {
-    return { chunks: [], lossy: false, job: this.get(id) }
+  observe(): never { throw new Error('not scripted') }
+
+  read(_id: JobId): JobRead {
+    throw new Error('not scripted')
   }
 
   readAt(_id: JobId, from: number): JobOutputRead {

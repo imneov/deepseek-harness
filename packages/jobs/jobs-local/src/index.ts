@@ -10,6 +10,7 @@
  * @module @deepseek-ai/dsh-jobs-local
  */
 
+import { randomUUID } from 'node:crypto'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -19,7 +20,7 @@ import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { JobRegistry, JobId } from '@deepseek-ai/dsh-jobs'
 import type {
   JobAppendOptions, JobEvent, JobEvents, JobHandle, JobKind, JobOutcome, JobOutputRead, JobOutputSource,
-  JobRead, JobSettleCause, JobSpec, JobStatus, JobView,
+  JobObservation, JobRegistryEpoch, JobInstanceId, JobRead, JobSettleCause, JobSpec, JobStatus, JobView,
 } from '@deepseek-ai/dsh-jobs'
 import { JobEventHub, JobLayer } from './events.ts'
 import { startPump } from './pump.ts'
@@ -75,6 +76,7 @@ interface ProducerState {
 /** The registry's mutable per-job record (never handed out — see {@link LocalJobRegistry.view}). */
 interface TrackedJob {
   id: JobId
+  instanceId: JobInstanceId
   kind: JobKind
   label: string
   outputLimitBytes: number | undefined
@@ -157,6 +159,7 @@ export class LocalJobRegistry extends JobRegistry {
   private readonly settledRetainBytes: number
   /** Schemastery-defaulted pull-source poll interval. */
   private readonly pumpPollMs: number
+  private readonly registryEpoch = randomUUID() as JobRegistryEpoch
   private store = new Map<JobId, TrackedJob>()
   private counters = new Map<string, number>()
   /**
@@ -242,6 +245,7 @@ export class LocalJobRegistry extends JobRegistry {
     const settled = new Promise<void>((resolve) => { markSettled = resolve })
     const job: TrackedJob = {
       id,
+      instanceId: randomUUID() as JobInstanceId,
       kind: spec.kind,
       label: spec.label,
       outputLimitBytes: spec.outputLimitBytes,
@@ -311,6 +315,17 @@ export class LocalJobRegistry extends JobRegistry {
 
   get(id: JobId, caller?: SessionId): JobView {
     return this.view(this.expect(id, caller))
+  }
+
+  observe(id: JobId, caller?: SessionId): JobObservation {
+    const job = this.expect(id, caller)
+    if (job.owner?.id !== caller) throw new Error(`job ${id} belongs to another session`)
+    return {
+      job: this.view(job),
+      registryEpoch: this.registryEpoch,
+      instanceId: job.instanceId,
+      terminalResult: !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'collected' : 'pending',
+    }
   }
 
   read(id: JobId, caller?: SessionId): JobRead {
@@ -444,10 +459,12 @@ export class LocalJobRegistry extends JobRegistry {
   private readJob(job: TrackedJob): JobRead {
     const read = job.ring.readFrom(job.modelCursor)
     job.modelCursor = job.ring.total
-    const result = isTerminal(job.status) && !job.resultDelivered ? job.result : undefined
-    if (result !== undefined) job.resultDelivered = true
+    const terminalRead = !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'repeat' : 'first'
+    const result = terminalRead === 'first' ? job.result : undefined
+    if (terminalRead === 'first') job.resultDelivered = true
     if (isTerminal(job.status)) job.ring.trim(this.settledRetainBytes)
     return {
+      receipt: { registryEpoch: this.registryEpoch, jobId: job.id, instanceId: job.instanceId, terminalRead },
       chunks: read.chunks,
       lossy: read.lossy,
       ...result !== undefined ? { result } : {},

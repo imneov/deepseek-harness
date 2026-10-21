@@ -262,6 +262,8 @@ interface JobView {
 ```ts type-equiv
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 interface JobRead {
+  /** Identity and collection fact for this read, including empty terminal output. */
+  receipt: JobReadReceipt
   /** Ring chunks appended since the model cursor, in offset order; every channel included. */
   chunks: readonly JobChunk[]
   /** True when the cursor fell below the oldest retained byte, so bytes are missing before `chunks`. */

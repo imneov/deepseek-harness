@@ -50,6 +50,8 @@ kind: "package-reference"
 
 在已提供 agent、工具与系统提示词服务的 harness 基础上加载这两个插件，即可获得完整功能：`dsh-jobs-local` 提供进程内后台任务注册表，`dsh-tool-jobs` 提供 `job_output`、`job_list`、`job_kill` 工具以及完成通知投递。
 
+`observe(id, caller)` 要求所有者精确匹配，会拒绝会话调用方观察无主任务。它返回 `job`、注册表生命周期的 `registryEpoch`、每次注册独有的 `instanceId`，以及 `terminalResult`：`not-terminal`、`pending` 或 `collected`。观察不改变消费游标或结果交付。首次终态 `read`（包括空输出和纯流输出）把 pending 改为 collected，并返回带 `terminalRead: first` 的稳定 `receipt`；后续读取报告 `repeat`。收取表示输出已交给读取方，不表示模型理解或业务验收。历史回执缺失时状态未知。比较身份须同时比较 epoch、instance 与 job id；替换后的注册表可能复用可读 id。
+
 ### 可能出什么问题
 
 任何预检拒绝都不会留下 job id 或已注册的工作。由随附的进程内注册表管理的任务会随 harness 进程终止而消失；跨重启的持久执行需要一个实现本约定的不同后端。
