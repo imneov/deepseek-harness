@@ -33,7 +33,7 @@ Load this plugin in any composition where the agent should start, observe, and s
 - `job_list()` — List your background jobs with their ids, kinds, and statuses, one per line: `<id> [<kind>] <status> — <label>`.
 - `job_kill(job_id, reason?)` — Request cancellation of a running job immediately; the job settles as `killed` once its work actually stops. A terminal job returns its current snapshot, and the optional reason is recorded and forwarded to the job.
 
-The three tools return `{ text, job }`, `PublicJobSnapshot[]`, and `{ outcome: 'cancellation-requested' | 'already-finished', job }` respectively. A public snapshot carries id, kind, label, status with the live progress line or the terminal detail, and start/finish times, and omits ownership and ring offsets. All three render through generic UI cards: `read` for output and list, `execute` for kill.
+The three tools return `{ text, job, receipt? }`, `PublicJobSnapshot[]`, and `{ outcome: 'cancellation-requested' | 'already-finished', job }` respectively. A public snapshot carries id, kind, label, status with the live progress line or the terminal detail, and start/finish times, and omits ownership and ring offsets. All three render through generic UI cards: `read` for output and list, `execute` for kill.
 
 ### Completion notices
 
@@ -57,6 +57,8 @@ Loading the plugin with no config is the common path; a `waitTimeoutMs` above `m
 | `maxConsecutiveWakes` | unset | Turns one owner may open by wake before notices degrade to injection; unset means no cap |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-tool-jobs) is the exhaustive source for every accepted field and its JSDoc.
+
+A real `job_output` returns a `receipt` beside its text and job projection, and projects it into standard tool-result `meta.jobReceipt`: `registryEpoch`, `jobId`, `instanceId`, and `terminalRead` (`not-terminal`, `first`, or `repeat`). The first terminal read collects even empty or stream-only output; a repeat confirms the registry has already collected it without sending the result again. The Session journal records collection, while a persisted successful tool-result receipt records output delivery through that call. Neither proves model admission, understanding, or business acceptance. A missing receipt, including older logs and policy-authored replacements, means unknown; errors carry no fabricated receipt.
 
 ### What can go wrong
 

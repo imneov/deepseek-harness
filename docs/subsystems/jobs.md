@@ -259,6 +259,8 @@ interface JobView {
 
 `JobRegistry.list`, `get`, `read`, `readAt`, `kill`, and `wait` each accept the caller’s `SessionId`; omitting it permits only unowned jobs, while a session may also access its own jobs.
 
+`JobRegistry.observe(id, caller)` returns `JobObservation`: `job`, `registryEpoch`, `instanceId`, and `terminalResult` (`not-terminal`, `pending`, or `collected`). It requires an exact owner match and never advances the cursor or collects output. `JobReadReceipt` carries `registryEpoch`, `jobId`, `instanceId`, and `terminalRead` (`not-terminal`, `first`, or `repeat`). A first terminal read collects even empty output; collection does not establish model understanding. `JobObservationRecord` is the same observation stored in the owner Session by the optional log-only `jobs/registered`, `jobs/settled`, and `jobs/collected` events. Their envelopes are explicitly ignorable; durability follows the standard Session flush barrier. Missing historical instances remain unknown or unrecoverable, and identity comparisons include epoch and instance.
+
 ```ts type-equiv
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 interface JobRead {

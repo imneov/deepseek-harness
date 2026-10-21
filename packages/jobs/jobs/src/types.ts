@@ -167,6 +167,20 @@ export interface JobObservation {
   readonly terminalResult: 'not-terminal' | 'pending' | 'collected'
 }
 
+/** Optional owner-session journal payload; durability follows the standard Session flush barrier. */
+export type JobObservationRecord = JobObservation
+
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    /** Registration committed in the local registry; old readers may ignore this log-only fact. */
+    'jobs/registered': JobObservationRecord
+    /** Terminal registry state; does not imply delivery or process survival after restart. */
+    'jobs/settled': JobObservationRecord
+    /** First terminal read handed output to a caller; does not imply model understanding. */
+    'jobs/collected': JobObservationRecord
+  }
+}
+
 /** Stable identity and collection fact captured atomically by one consuming read. */
 export interface JobReadReceipt {
   readonly registryEpoch: JobRegistryEpoch

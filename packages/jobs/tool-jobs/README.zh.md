@@ -33,7 +33,7 @@ kind: "package-reference"
 - `job_list()`——列出你的后台任务及其 id、kind 与状态，每行一个：`<id> [<kind>] <status> — <label>`。
 - `job_kill(job_id, reason?)`——立即请求取消运行中的任务；任务在其工作真正停止后以 `killed` 结算。终止任务返回其当前快照，可选的原因会被记录并转发给任务。
 
-三个工具依次返回 `{ text, job }`、`PublicJobSnapshot[]` 与 `{ outcome: 'cancellation-requested' | 'already-finished', job }`。公共快照携带 id、kind、label、带实时进度行或终态 detail 的状态，以及开始／结束时间，并省略归属与环偏移。三个工具都通过通用 UI 卡片渲染：output 和 list 用 `read`，kill 用 `execute`。
+三个工具依次返回 `{ text, job, receipt? }`、`PublicJobSnapshot[]` 与 `{ outcome: 'cancellation-requested' | 'already-finished', job }`。公共快照携带 id、kind、label、带实时进度行或终态 detail 的状态，以及开始／结束时间，并省略归属与环偏移。三个工具都通过通用 UI 卡片渲染：output 和 list 用 `read`，kill 用 `execute`。
 
 ### 完成通知
 
@@ -57,6 +57,8 @@ kind: "package-reference"
 | `maxConsecutiveWakes` | 未设置 | 一个所有者可由唤醒开启的轮数，超出后通知降级为注入；未设置即不封顶 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-jobs)是每个受支持字段及其 JSDoc 的穷尽式真源。
+
+真实的 `job_output` 在文本与任务投影之外返回 `receipt`，并将其投影到标准工具结果 `meta.jobReceipt`：`registryEpoch`、`jobId`、`instanceId` 以及 `terminalRead`（`not-terminal`、`first` 或 `repeat`）。首次终态读取会收取空输出或纯流输出；重复读取确认注册表已收取，但不会再次发送 result。Session 日志记录收取事实，持久化的成功工具结果回执则记录经该次调用交付输出。两者都不证明模型准入、理解或业务验收。旧日志及策略生成的替换结果等缺失回执的情况表示未知；错误不携带虚构回执。
 
 ### 可能出什么问题
 

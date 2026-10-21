@@ -16,7 +16,7 @@ import { TextRetainer } from '@deepseek-ai/dsh-output-retention'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolDefinition, ToolExecution } from '@deepseek-ai/dsh-tools'
 import { JobId } from '@deepseek-ai/dsh-jobs'
-import type { JobView, JobRead } from '@deepseek-ai/dsh-jobs'
+import type { JobView, JobRead, JobReadReceipt } from '@deepseek-ai/dsh-jobs'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent'
 import { publicJob, renderModelDelta, statusLine } from './render.ts'
@@ -180,12 +180,12 @@ function presentJobCall(title: string, kind: 'read' | 'execute', rawInput?: stri
 }
 
 /** The consuming read as the model sees it: the delta, then the result once, then the status line. */
-function readBody(read: JobRead): { text: string; job: PublicJobSnapshot } {
+function readBody(read: JobRead): { text: string; job: PublicJobSnapshot; receipt: JobReadReceipt } {
   const delta = renderModelDelta(read.chunks, read.lossy, read.job.output.spillPaths ?? [])
   const text = read.result === undefined
     ? delta
     : `${delta}${delta.length > 0 && !delta.endsWith('\n') ? '\n' : ''}${read.result}`
-  return { text, job: publicJob(read.job) }
+  return { text, job: publicJob(read.job), receipt: read.receipt }
 }
 
 export function apply(ctx: Context, config: Config): void {
@@ -324,9 +324,19 @@ export function apply(ctx: Context, config: Config): void {
         additionalProperties: false,
         properties: {
           text: { type: 'string', required: true },
+          receipt: {
+            type: 'object', additionalProperties: false,
+            properties: {
+              registryEpoch: { type: 'string', required: true },
+              jobId: { type: 'string', required: true },
+              instanceId: { type: 'string', required: true },
+              terminalRead: { type: 'string', required: true, enum: ['not-terminal', 'first', 'repeat'] },
+            },
+          },
           job: { ...PUBLIC_JOB_SCHEMA, required: true },
         },
       },
+      presentationMeta: (_args, value) => value.receipt === undefined ? {} : { jobReceipt: value.receipt },
       render: (_args, value) => {
         const body = value.text.length > 0 ? value.text : '(no new output)'
         const separator = body.endsWith('\n') ? '' : '\n'

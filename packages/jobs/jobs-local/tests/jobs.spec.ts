@@ -173,6 +173,11 @@ describe('LocalJobRegistry.observe', () => {
       unowned.settle({ status: 'completed' })
       p.job().append('retained stream')
       const running = ctx.jobs.observe(id, owner.id)
+      expect(owner.session.snapshotEvents()).toContainEqual(expect.objectContaining({
+        type: 'jobs/registered', ignorable: true, data: expect.objectContaining({
+          registryEpoch: running.registryEpoch, instanceId: running.instanceId, terminalResult: 'not-terminal',
+        }),
+      }))
       expect(running.terminalResult).toBe('not-terminal')
       expect(() => ctx.jobs.observe(id, foreign.id)).toThrow('another session')
       expect(() => ctx.jobs.observe(unownedId, owner.id)).toThrow('another session')

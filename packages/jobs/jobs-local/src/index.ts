@@ -87,7 +87,7 @@ interface TrackedJob {
   ring: OutputRing
   /** The model's consuming cursor; {@link JobRegistry.readAt} never moves it. */
   modelCursor: number
-  /** Whether the first post-settlement read already handed out `result`. */
+  /** Whether a post-settlement read already handed out the terminal output, including an absent result. */
   resultDelivered: boolean
   /** Producer-shared progress line and commit binding. */
   state: ProducerState
@@ -277,6 +277,7 @@ export class LocalJobRegistry extends JobRegistry {
     // has genuinely changed. The announcement precedes the pump because the
     // pump drains its sources once synchronously, and that drain may append
     // and announce output: a job's first event is always `registered`.
+    this.journal(job, 'jobs/registered')
     this.emit({ type: 'registered', job: this.view(job) }, owner)
 
     // The producer's settlement or a registry-forced one ends the pump; the
@@ -447,6 +448,16 @@ export class LocalJobRegistry extends JobRegistry {
     }
   }
 
+  /** Journal publication cannot undo an already committed job or consume operation. */
+  private journal(job: TrackedJob, type: 'jobs/registered' | 'jobs/settled' | 'jobs/collected'): void {
+    if (job.owner === undefined) return
+    try {
+      job.owner.session.appendIgnorable(type, this.observe(job.id, job.owner.id))
+    } catch (error: unknown) {
+      this.selfCtx.logger.warn(`jobs: ${type} journal for ${job.id} failed: ${String(error)}`)
+    }
+  }
+
   private emit(event: JobEvent, owner: Agent | undefined): void {
     this.hub.emit(event, owner)
   }
@@ -461,7 +472,10 @@ export class LocalJobRegistry extends JobRegistry {
     job.modelCursor = job.ring.total
     const terminalRead = !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'repeat' : 'first'
     const result = terminalRead === 'first' ? job.result : undefined
-    if (terminalRead === 'first') job.resultDelivered = true
+    if (terminalRead === 'first') {
+      job.resultDelivered = true
+      this.journal(job, 'jobs/collected')
+    }
     if (isTerminal(job.status)) job.ring.trim(this.settledRetainBytes)
     return {
       receipt: { registryEpoch: this.registryEpoch, jobId: job.id, instanceId: job.instanceId, terminalRead },
@@ -613,6 +627,7 @@ export class LocalJobRegistry extends JobRegistry {
     // cursor has not consumed. A job that finishes before its first model
     // read keeps everything the live cap retained until that read.
     job.ring.trim(Math.max(this.settledRetainBytes, job.ring.total - job.modelCursor))
+    this.journal(job, 'jobs/settled')
     const waitResolvers = [...job.waitResolvers]
     job.waitResolvers.clear()
     for (const resolveWait of waitResolvers) resolveWait()

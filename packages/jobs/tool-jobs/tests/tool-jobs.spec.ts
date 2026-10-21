@@ -6,7 +6,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { emitAgentEvent } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
@@ -55,7 +55,7 @@ async function fakeAgent(ctx: Context, sessionId: string, delivery: FakeDelivery
     inject: delivery.inject ?? (() => {}),
     followup: delivery.followup ?? (() => {}),
     status: delivery.status ?? 'running',
-    session: { id, header: { version: 0, id, createdAt: 0 } },
+    session: Session.create(id),
   } as unknown as Agent
   agentRegistryDisposers.set(agent, await ctx.agents.register(agent))
   agentScopeFibers.set(agent, scopeFiber)
@@ -129,6 +129,37 @@ async function settleTasks(ctx: Context, owner: Agent, count: number): Promise<v
     await tick()
   }
 }
+
+describe('job_output receipts', () => {
+  it('returns stable collection metadata for first and repeated stream-only terminal reads', async () => {
+    const { ctx } = await setup()
+    const p = producer()
+    const id = ctx.jobs.start(p.spec)
+    try {
+      p.append('stream output')
+      const running = await call(ctx, 'job_output', { job_id: id })
+      expect(running.meta).toEqual({ jobReceipt: {
+        registryEpoch: expect.any(String), instanceId: expect.any(String), jobId: id, terminalRead: 'not-terminal',
+      } })
+      p.settle({ status: 'completed' })
+      await ctx.jobs.wait(id, 1000)
+      expect(ctx.jobs.observe(id).terminalResult).toBe('pending')
+      const first = await call(ctx, 'job_output', { job_id: id })
+      expect(first.meta).toEqual({ jobReceipt: {
+        registryEpoch: expect.any(String), instanceId: expect.any(String), jobId: id, terminalRead: 'first',
+      } })
+      expect(ctx.jobs.observe(id).terminalResult).toBe('collected')
+      const repeat = await call(ctx, 'job_output', { job_id: id })
+      expect(repeat.meta).toEqual({ jobReceipt: {
+        registryEpoch: expect.any(String), instanceId: expect.any(String), jobId: id, terminalRead: 'repeat',
+      } })
+      expect(text(repeat)).toBe('(no new output)\n[status: completed]')
+    } finally {
+      p.settle({ status: 'completed' })
+      await ctx.fiber.dispose()
+    }
+  })
+})
 
 describe('tool-jobs setup', () => {
   it('attaches the job controller on load and detaches it with the fiber', async () => {

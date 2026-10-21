@@ -10306,6 +10306,669 @@
       }
     },
     {
+      "key": "event:jobs/collected",
+      "kind": "event",
+      "event": "jobs/collected",
+      "surface": false,
+      "digest": "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/collected"
+          }
+        ]
+      }
+    },
+    {
+      "key": "event:jobs/registered",
+      "kind": "event",
+      "event": "jobs/registered",
+      "surface": false,
+      "digest": "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/registered"
+          }
+        ]
+      }
+    },
+    {
+      "key": "event:jobs/settled",
+      "kind": "event",
+      "event": "jobs/settled",
+      "surface": false,
+      "digest": "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/settled"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:llm/retry",
       "kind": "event",
       "event": "llm/retry",
@@ -21868,6 +22531,11 @@
       "sources": []
     },
     {
+      "digest": "083da9066e9c7a6ce0c02d056333d23a25175cc67ae37bc125955d8d05827257",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "09655b34d7f3cf1e9005974de2357de2d4a60deea165d16dac1eadaa6ec539a8",
       "names": [],
       "sources": []
@@ -22330,6 +22998,11 @@
       "sources": []
     },
     {
+      "digest": "2150e9182e6baf9b1dece5da065970c09234009b27597f097dd18399b15ed952",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "2152caf1a71e588e4df2358a806dea24936c1c47131134f01a12939d12cdc0c0",
       "names": [
         "packages/experimental/agent-team/src/types.ts#TeamMessageSource"
@@ -22466,6 +23139,11 @@
       "sources": []
     },
     {
+      "digest": "2bbd3d3671781d440105a2a306de21a8c9aab9ea4c9dfdd5f6439b503f2a910d",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "2c4c21f19f426a58f2dac914e34313aa43f8408972de857a486d1f086d5adb6c",
       "names": [],
       "sources": []
@@ -22587,6 +23265,11 @@
       "sources": [
         "packages/core/session/src/types.ts:462"
       ]
+    },
+    {
+      "digest": "33f0b9697864eb13e7a883cfaa51dc280a0b6406c6b84c6d4956f9eb9b2481c6",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "34d1ab5c5df378186d6054b1a1beea9a41e41965d6f336f0bc0025c441a82e66",
@@ -22923,6 +23606,9 @@
         "packages/goal/goal/src/types.ts#GoalId",
         "packages/interaction/commands/src/brand.ts#CommandId",
         "packages/interaction/user-approval/src/types.ts#ApprovalRequestId",
+        "packages/jobs/jobs/src/brand.ts#JobId",
+        "packages/jobs/jobs/src/brand.ts#JobInstanceId",
+        "packages/jobs/jobs/src/brand.ts#JobRegistryEpoch",
         "packages/llm/llm-retry/src/brand.ts#RetryId",
         "packages/llm/llm/src/brand.ts#MessageId",
         "packages/llm/llm/src/brand.ts#ProviderRequestId",
@@ -22948,6 +23634,9 @@
         "packages/goal/goal/src/types.ts:17",
         "packages/interaction/commands/src/brand.ts:31",
         "packages/interaction/user-approval/src/types.ts:17",
+        "packages/jobs/jobs/src/brand.ts:19",
+        "packages/jobs/jobs/src/brand.ts:31",
+        "packages/jobs/jobs/src/brand.ts:34",
         "packages/llm/llm-retry/src/brand.ts:4",
         "packages/llm/llm/src/brand.ts:16",
         "packages/llm/llm/src/brand.ts:31",
@@ -23247,6 +23936,11 @@
       "sources": []
     },
     {
+      "digest": "5f5211db42aa55e71c5577d51699460bb02077c1d1fa546ebaab51d8631ebf10",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "5f758f3de5f00c18968a7c6d347083aac5c9ae13f6a79c78f6611b23c4973564",
       "names": [
         "packages/subagent/subagent/src/descriptor.ts#OneShotSubagentDescriptorData"
@@ -23387,6 +24081,15 @@
       "digest": "6ab45ac76839722df912f3ba50f1c6b41f2d614bde11f1aabfae04117ccdc80d",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "6b009258cbca9adc6fb01bbf020e27f3e5fb99f3c0e0f385842683e2d62fd457",
+      "names": [
+        "packages/jobs/jobs/src/view.ts#JobView"
+      ],
+      "sources": [
+        "packages/jobs/jobs/src/view.ts:65"
+      ]
     },
     {
       "digest": "6b23ed9ce1b397e602788dbe033693bf97642a69e23fcab1cc45bf6f13b6d619",
@@ -23530,6 +24233,15 @@
       "sources": []
     },
     {
+      "digest": "750a0e9010d85962e22c6999b9b4cdf0453b6586d255f38d23cb8ea3ddfe867f",
+      "names": [
+        "packages/jobs/jobs/src/view.ts#JobStatus"
+      ],
+      "sources": [
+        "packages/jobs/jobs/src/view.ts:19"
+      ]
+    },
+    {
       "digest": "7554565be416b0342053ee6a46256c9dab07c487349b4a5f10bab1edc151c619",
       "names": [],
       "sources": []
@@ -23580,6 +24292,11 @@
     },
     {
       "digest": "7af85bf70d4eafce63e739adae38ea85501e68df3a0e22f97f3a0be90fd9e4cb",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "7c07f9d32858558ccfb473b5ba51faf3fba1d482b41f09b16ac7145cfff6823a",
       "names": [],
       "sources": []
     },
@@ -23928,6 +24645,17 @@
       "sources": []
     },
     {
+      "digest": "92efdc4dc41b4a35285b1ab8e15aac5362305596d32212154d809abf54e20d89",
+      "names": [
+        "packages/jobs/jobs/src/types.ts#JobObservation",
+        "packages/jobs/jobs/src/types.ts#JobObservationRecord"
+      ],
+      "sources": [
+        "packages/jobs/jobs/src/types.ts:162",
+        "packages/jobs/jobs/src/types.ts:171"
+      ]
+    },
+    {
       "digest": "930a6567a10bb62ddd157bd8abdf4b182810c8c3b49d91309b3b009a5fed9731",
       "names": [],
       "sources": [
@@ -24007,6 +24735,13 @@
       ]
     },
     {
+      "digest": "98531afacb4d2839a41ce3894b3af1960b2346d9b2907c4643b878592e8780c7",
+      "names": [],
+      "sources": [
+        "packages/jobs/jobs/src/view.ts:99"
+      ]
+    },
+    {
       "digest": "9890113e97dd3541787bfe6704f2b223d3a890b5325ca0acae2b0398909b413e",
       "names": [],
       "sources": [
@@ -24062,6 +24797,11 @@
       "sources": [
         "packages/core/session/src/types.ts:240"
       ]
+    },
+    {
+      "digest": "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "9ac52f0f84fec2eb9f71c2937e497d759db5ca0da4836d93a679d113684141f2",
@@ -24746,6 +25486,11 @@
       ]
     },
     {
+      "digest": "c6e4fa548c431804f6adebfaed3e343205c813699d2a191f990a7b1133e8c5ba",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "c748fb42c80a120038a8c587af80ec39924803c401364db11c8974d5bf6d0262",
       "names": [],
       "sources": []
@@ -24860,6 +25605,11 @@
     },
     {
       "digest": "d595ec73b32b016a6055333c67a5d646032b22e672da1d4a09c5b1ae398a093a",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "d5f88b01b19dabc15656cb135fb90b82a82f2924bbd5fba8d1d349c6bdae6ced",
       "names": [],
       "sources": []
     },
@@ -25135,6 +25885,11 @@
       ]
     },
     {
+      "digest": "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "edbbfff1128099fda7b792c56330d2cb04debc9790988e66d1c3f4026e813e0e",
       "names": [],
       "sources": []
@@ -25165,6 +25920,11 @@
         "packages/core/session/src/types.ts:299",
         "packages/core/session/src/types.ts:301"
       ]
+    },
+    {
+      "digest": "ef226a90ddac6cd8e631a3a337a3a3e27f9494be92befb7c718b404681d75e21",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "ef4f00923b9edbae15c7ef05320280bf61147ca17146cf59690359bfd5e5da45",
@@ -25245,6 +26005,11 @@
     },
     {
       "digest": "f4a66f654996c093aae700ea4c434ff2ee3569fea9c0e5813ccf6afdccabd163",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad",
       "names": [],
       "sources": []
     },

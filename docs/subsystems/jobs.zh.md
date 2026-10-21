@@ -259,6 +259,8 @@ interface JobView {
 
 `JobRegistry` 的 `list`、`get`、`read`、`readAt`、`kill` 和 `wait` 各自接收调用方的 `SessionId`；省略调用方时仅可访问无主 job，传入会话时还可访问该会话拥有的 job。
 
+`JobRegistry.observe(id, caller)` 返回 `JobObservation`：`job`、`registryEpoch`、`instanceId` 与 `terminalResult`（`not-terminal`、`pending` 或 `collected`）。它要求精确匹配所有者，绝不推进游标或收取输出。`JobReadReceipt` 包含 `registryEpoch`、`jobId`、`instanceId` 与 `terminalRead`（`not-terminal`、`first` 或 `repeat`）。首次终态读取即使输出为空也会收取；收取不证明模型理解。`JobObservationRecord` 是写入所有者 Session 的相同观察，通过可选的仅日志事件 `jobs/registered`、`jobs/settled` 与 `jobs/collected` 保存。事件信封显式可忽略；持久性遵循标准 Session flush 屏障。历史实例缺失时仍为未知或不可恢复，身份比较须包含 epoch 与 instance。
+
 ```ts type-equiv
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 interface JobRead {

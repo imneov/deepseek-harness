@@ -29,6 +29,7 @@ export type {
   JobKindMap,
   JobOutcome,
   JobObservation,
+  JobObservationRecord,
   JobReadReceipt,
   JobRegistryEpoch,
   JobInstanceId,

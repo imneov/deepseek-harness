@@ -1,0 +1,669 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {
+      "key": "event:jobs/collected",
+      "kind": "event",
+      "event": "jobs/collected",
+      "surface": false,
+      "digest": "ed7a9d4486ff70d1375b1242864b78e63aca92ed2f620bb0eca9fd47f400d7aa",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/collected"
+          }
+        ]
+      }
+    },
+    {
+      "key": "event:jobs/registered",
+      "kind": "event",
+      "event": "jobs/registered",
+      "surface": false,
+      "digest": "f4e6a19413549200c22e5288b2d58bd791e75e033175a0662839c6a0381f63ad",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/registered"
+          }
+        ]
+      }
+    },
+    {
+      "key": "event:jobs/settled",
+      "kind": "event",
+      "event": "jobs/settled",
+      "surface": false,
+      "digest": "9a9ea866e2ad1c37d00e559cf538bb48f424e62c8ae11b9cb7e1a97988eb7eac",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 17,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 18,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "instanceId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "job",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "registryEpoch",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "terminalResult",
+                "type": 13,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "detail",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "finishedAt",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "id",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "kind",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "label",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "output",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "outputLimitBytes",
+                "type": 4,
+                "optional": true
+              },
+              {
+                "name": "owner",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "progress",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "startedAt",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "status",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "earliest",
+                "type": 4,
+                "optional": false
+              },
+              {
+                "name": "spillPaths",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "total",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "array",
+            "element": 2
+          },
+          {
+            "kind": "union",
+            "types": [
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "completed"
+          },
+          {
+            "kind": "literal",
+            "value": "failed"
+          },
+          {
+            "kind": "literal",
+            "value": "killed"
+          },
+          {
+            "kind": "literal",
+            "value": "running"
+          },
+          {
+            "kind": "literal",
+            "value": "stopping"
+          },
+          {
+            "kind": "union",
+            "types": [
+              14,
+              15,
+              16
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "collected"
+          },
+          {
+            "kind": "literal",
+            "value": "not-terminal"
+          },
+          {
+            "kind": "literal",
+            "value": "pending"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "jobs/settled"
+          }
+        ]
+      }
+    }
+  ],
+  "types": []
+}
