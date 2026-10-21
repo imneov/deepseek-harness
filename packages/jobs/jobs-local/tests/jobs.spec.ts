@@ -158,6 +158,55 @@ function scriptedSource(reads: { text: string; lossy?: boolean }[], channel?: 's
   }
 }
 
+describe('LocalJobRegistry.observe', () => {
+  it('observes exact-owner terminal delivery without consuming output', async () => {
+    const ctx = await harness()
+    let active: ReturnType<typeof producer> | undefined
+    try {
+      const owner = await liveAgent(ctx, 'observer-owner')
+      const foreign = await liveAgent(ctx, 'observer-foreign')
+      const p = producer({ owner })
+      active = p
+      const id = ctx.jobs.start(p.spec)
+      const unowned = producer()
+      const unownedId = ctx.jobs.start(unowned.spec)
+      unowned.settle({ status: 'completed' })
+      p.job().append('retained stream')
+      const running = ctx.jobs.observe(id, owner.id)
+      expect(running.terminalResult).toBe('not-terminal')
+      expect(() => ctx.jobs.observe(id, foreign.id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(unownedId, owner.id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(JobId('missing'), owner.id)).toThrow('unknown job')
+      p.settle({ status: 'completed', result: 'final value' })
+      await ctx.jobs.wait(id, 1000, owner.id)
+      const pending = ctx.jobs.observe(id, owner.id)
+      expect(pending).toMatchObject({
+        registryEpoch: running.registryEpoch,
+        instanceId: running.instanceId,
+        terminalResult: 'pending',
+        job: { id, status: 'completed' },
+      })
+      expect(ctx.jobs.observe(id, owner.id)).toEqual(pending)
+      expect(ctx.jobs.readAt(id, 0, owner.id).chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
+      const first = ctx.jobs.read(id, owner.id)
+      expect(first.result).toBe('final value')
+      expect(first.chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
+      expect(first.receipt).toEqual({
+        registryEpoch: running.registryEpoch, instanceId: running.instanceId, jobId: id, terminalRead: 'first',
+      })
+      expect(ctx.jobs.observe(id, owner.id).terminalResult).toBe('collected')
+      const repeat = ctx.jobs.read(id, owner.id)
+      expect(repeat.result).toBeUndefined()
+      expect(repeat.chunks).toEqual([])
+      expect(repeat.receipt).toEqual({ ...first.receipt, terminalRead: 'repeat' })
+    } finally {
+      active?.settle({ status: 'completed' })
+      await ctx.fiber.dispose()
+    }
+  })
+})
+
 describe('LocalJobRegistry.start', () => {
   it('preserves the SessionId brand on public owner projections', () => {
     expectTypeOf<JobView['owner']>().toEqualTypeOf<SessionId | undefined>()
