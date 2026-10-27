@@ -50,6 +50,12 @@ kind: "package-reference"
 
 在已提供 agent、工具与系统提示词服务的 harness 基础上加载这两个插件，即可获得完整功能：`dsh-jobs-local` 提供进程内后台任务注册表，`dsh-tool-jobs` 提供 `job_output`、`job_list`、`job_kill` 工具以及完成通知投递。
 
+`observe(id, caller)` 要求所有者精确匹配，会拒绝会话调用方观察无主任务。它返回 `job`、注册表生命周期的 `registryEpoch`、每次注册独有的 `instanceId`，以及 `terminalResult`：`not-terminal`、`pending` 或 `collected`。观察不改变消费游标或结果交付。首次终态 `read`（包括空输出和纯流输出）把 pending 改为 collected，并返回带 `terminalRead: first` 的稳定 `receipt`；后续读取报告 `repeat`。收取表示输出已交给读取方，不表示模型理解或业务验收。历史回执缺失时状态未知。比较身份须同时比较 epoch、instance 与 job id；替换后的注册表可能复用可读 id。
+
+有主任务的注册、结算和首次终态读取分别向所有者 Session 追加 `jobs/registered`、`jobs/settled` 与 `jobs/collected`。每个可选的仅日志事件携带包含观察字段与可选收取来源的 `JobObservationRecord`，事件信封含 `ignorable: true`。无主任务没有 Session 日志。同步操作仅提交内存；持久交付需要配置持久写入方并成功完成 `sessions.flush(owner.session)`。日志发布失败会发出警告，不能回滚已提交的工作或消费式读取；缺失事实仍为未知。历史注册实例不在当前注册表中时，应视为历史或不可恢复，不能据此认定它已结算。
+
+`JobObservationRecord.collection` 仅出现在收取记录中：`read` 表示首次终态读取，`remove` 表示控制器按前台移除合同显式确认收取。所有者或服务 teardown 移除记录时不宣称已收取。两种来源都不证明模型理解。
+
 ### 可能出什么问题
 
 任何预检拒绝都不会留下 job id 或已注册的工作。由随附的进程内注册表管理的任务会随 harness 进程终止而消失；跨重启的持久执行需要一个实现本约定的不同后端。

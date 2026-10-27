@@ -10,6 +10,7 @@
  * @module @deepseek-ai/dsh-jobs-local
  */
 
+import { randomUUID } from 'node:crypto'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -19,7 +20,7 @@ import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { JobRegistry, JobId } from '@deepseek-ai/dsh-jobs'
 import type {
   JobAppendOptions, JobEvent, JobEvents, JobHandle, JobKind, JobOutcome, JobOutputRead, JobOutputSource,
-  JobRead, JobSettleCause, JobSpec, JobStatus, JobView,
+  JobObservation, JobRegistryEpoch, JobInstanceId, JobRead, JobSettleCause, JobSpec, JobStatus, JobView,
 } from '@deepseek-ai/dsh-jobs'
 import { JobEventHub, JobLayer } from './events.ts'
 import { startPump } from './pump.ts'
@@ -75,6 +76,7 @@ interface ProducerState {
 /** The registry's mutable per-job record (never handed out — see {@link LocalJobRegistry.view}). */
 interface TrackedJob {
   id: JobId
+  instanceId: JobInstanceId
   kind: JobKind
   label: string
   outputLimitBytes: number | undefined
@@ -85,7 +87,7 @@ interface TrackedJob {
   ring: OutputRing
   /** The model's consuming cursor; {@link JobRegistry.readAt} never moves it. */
   modelCursor: number
-  /** Whether the first post-settlement read already handed out `result`. */
+  /** Whether a post-settlement read already handed out the terminal output, including an absent result. */
   resultDelivered: boolean
   /** Producer-shared progress line and commit binding. */
   state: ProducerState
@@ -157,6 +159,7 @@ export class LocalJobRegistry extends JobRegistry {
   private readonly settledRetainBytes: number
   /** Schemastery-defaulted pull-source poll interval. */
   private readonly pumpPollMs: number
+  private readonly registryEpoch = randomUUID() as JobRegistryEpoch
   private store = new Map<JobId, TrackedJob>()
   private counters = new Map<string, number>()
   /**
@@ -242,6 +245,7 @@ export class LocalJobRegistry extends JobRegistry {
     const settled = new Promise<void>((resolve) => { markSettled = resolve })
     const job: TrackedJob = {
       id,
+      instanceId: randomUUID() as JobInstanceId,
       kind: spec.kind,
       label: spec.label,
       outputLimitBytes: spec.outputLimitBytes,
@@ -273,6 +277,7 @@ export class LocalJobRegistry extends JobRegistry {
     // has genuinely changed. The announcement precedes the pump because the
     // pump drains its sources once synchronously, and that drain may append
     // and announce output: a job's first event is always `registered`.
+    this.journal(job, 'jobs/registered')
     this.emit({ type: 'registered', job: this.view(job) }, owner)
 
     // The producer's settlement or a registry-forced one ends the pump; the
@@ -313,6 +318,17 @@ export class LocalJobRegistry extends JobRegistry {
     return this.view(this.expect(id, caller))
   }
 
+  observe(id: JobId, caller?: SessionId): JobObservation {
+    const job = this.expect(id, caller)
+    if (job.owner?.id !== caller) throw new Error(`job ${id} belongs to another session`)
+    return {
+      job: this.view(job),
+      registryEpoch: this.registryEpoch,
+      instanceId: job.instanceId,
+      terminalResult: !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'collected' : 'pending',
+    }
+  }
+
   read(id: JobId, caller?: SessionId): JobRead {
     return this.readJob(this.expect(id, caller))
   }
@@ -336,6 +352,10 @@ export class LocalJobRegistry extends JobRegistry {
   remove(id: JobId, caller?: SessionId): void {
     const job = this.expect(id, caller)
     if (!isTerminal(job.status)) throw new Error(`job ${id} is still ${job.status}; kill it and wait for settlement before removing it`)
+    if (!job.resultDelivered) {
+      job.resultDelivered = true
+      this.journal(job, 'jobs/collected', 'remove')
+    }
     this.drop([job])
   }
 
@@ -432,6 +452,23 @@ export class LocalJobRegistry extends JobRegistry {
     }
   }
 
+  /** Journal publication cannot undo an already committed job or consume operation. */
+  private journal(
+    job: TrackedJob,
+    type: 'jobs/registered' | 'jobs/settled' | 'jobs/collected',
+    collection?: 'read' | 'remove',
+  ): void {
+    if (job.owner === undefined) return
+    try {
+      job.owner.session.appendIgnorable(type, {
+        ...this.observe(job.id, job.owner.id),
+        ...collection === undefined ? {} : { collection },
+      })
+    } catch (error: unknown) {
+      this.selfCtx.logger.warn(`jobs: ${type} journal for ${job.id} failed: ${String(error)}`)
+    }
+  }
+
   private emit(event: JobEvent, owner: Agent | undefined): void {
     this.hub.emit(event, owner)
   }
@@ -444,10 +481,13 @@ export class LocalJobRegistry extends JobRegistry {
   private readJob(job: TrackedJob): JobRead {
     const read = job.ring.readFrom(job.modelCursor)
     job.modelCursor = job.ring.total
-    const result = isTerminal(job.status) && !job.resultDelivered ? job.result : undefined
-    if (result !== undefined) job.resultDelivered = true
+    const terminalRead = !isTerminal(job.status) ? 'not-terminal' : job.resultDelivered ? 'repeat' : 'first'
+    const result = terminalRead === 'first' ? job.result : undefined
+    if (terminalRead === 'first') job.resultDelivered = true
     if (isTerminal(job.status)) job.ring.trim(this.settledRetainBytes)
+    if (terminalRead === 'first') this.journal(job, 'jobs/collected', 'read')
     return {
+      receipt: { registryEpoch: this.registryEpoch, jobId: job.id, instanceId: job.instanceId, terminalRead },
       chunks: read.chunks,
       lossy: read.lossy,
       ...result !== undefined ? { result } : {},
@@ -600,6 +640,7 @@ export class LocalJobRegistry extends JobRegistry {
     job.waitResolvers.clear()
     for (const resolveWait of waitResolvers) resolveWait()
     job.markSettled()
+    this.journal(job, 'jobs/settled')
     this.emit({ type: 'settled', job: this.view(job), cause, awaited: waitResolvers.length > 0 }, job.owner)
     // The ring's stream ends with settlement; the signal follows the committed
     // settlement so an observer that wakes on it reads the terminal state.

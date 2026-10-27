@@ -56,6 +56,8 @@ kind: "package-reference"
 
 任务属于其所有者和后端，而非生产方工具，因此重载生产方或控制器不会停止任务。拥有任务的 agent 被释放时，其任务会被取消、生产方会被等待、快照会被移除；服务释放对每个剩余任务执行同样的操作。销毁期间抛出的取消会强制失败记录并警告工作可能成为孤立工作，因此销毁永远不会死锁。
 
+每个 provider 实例生成新的 registry epoch，每次注册都有独立的 instance id。两者在读取、等待和取消期间保持稳定。这些身份可把历史记录与替换注册表中的同名任务区分开来，不保留跨重启执行。精确所有者的 `observe` 与终态读取回执语义由 [dsh-jobs](../jobs/README.zh.md) 定义。
+
 ### 可能出什么问题
 
 没有服务于所有者的控制器时无法启动工作——加载 `dsh-tool-jobs` 即附加一个，否则 `start()` 会以指出它的消息拒绝。返回但始终未结算 `done` 的生产方取消与缓慢停止无法区分，可能使销毁停滞并持续占用一个容量名额。每条记录都会在 harness 进程退出时消失。
@@ -95,7 +97,7 @@ kind: "package-reference"
 
 ### 准入与结算
 
-`activeJobCount` 按精确所有者或共享无主桶统计权威记录。`settle` 只记录一次终止结果（把记录下来的 kill 原因合并进 `killed` 的 detail），清除进度行，把环裁剪到结算保留量（保留模型游标尚未消费的全部字节），解析每个等待方，然后发出带原因的 `settled` 与环的最终 `output` 信号。原因在 `JobRegistry.kill` 之后为 `kill`，在所有者或服务取消之后为 `teardown`，否则为 `producer`；`dsh-tool-jobs` 据此跳过没人能读的通知。
+`activeJobCount` 按精确所有者或共享无主桶统计权威记录。`settle` 只记录一次终止结果（把记录下来的 kill 原因合并进 `killed` 的 detail），清除进度行，把环裁剪到结算保留量（保留模型游标尚未消费的全部字节），在发布 `jobs/settled` 日志或实时 `settled` 事件前解析每个等待方并解除其取消监听，然后发出环的最终 `output` 信号。原因在 `JobRegistry.kill` 之后为 `kill`，在所有者或服务取消之后为 `teardown`，否则为 `producer`；`dsh-tool-jobs` 据此跳过没人能读的通知。
 
 ### 销毁
 

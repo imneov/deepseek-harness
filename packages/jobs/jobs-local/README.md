@@ -56,6 +56,8 @@ The limit counts the exact owner's `running` and `stopping` records; all unowned
 
 Jobs belong to their owner and backend, not to the producer tool, so producer or controller reloads do not stop them. When an agent that owns jobs is disposed, its jobs are cancelled, their producers awaited, and their snapshots removed; service disposal does the same for every remaining job. A cancellation that throws during teardown force-fails the record and warns that the work may be orphaned, so teardown never deadlocks.
 
+Each provider instance generates a new registry epoch, and each registration has a distinct instance id. Both stay stable through reads, waits, and cancellation. These identities distinguish historical records from a replacement registry's same-named jobs; they do not preserve execution across restarts. The exact-owner `observe` and terminal-read receipt semantics are defined by [dsh-jobs](../jobs/README.md).
+
 ### What can go wrong
 
 Starting work fails without a controller that serves the owner — loading `dsh-tool-jobs` attaches one, and `start()` otherwise refuses with a message naming it. A producer cancel that returns without settling `done` stays indistinguishable from a slow stop and can stall teardown while holding one capacity slot. Every record disappears when the harness process exits.
@@ -95,7 +97,7 @@ This section explains the design decisions behind the registry and points at the
 
 ### Admission and settlement
 
-`activeJobCount` counts authoritative records per exact owner or in the shared unowned bucket. `settle` records the terminal outcome once (merging a recorded kill reason into a `killed` detail), clears the progress line, trims the ring to the settled cap (keeping every byte the model cursor has not consumed), resolves every waiter, then emits `settled` with its cause and the ring's final `output` signal. The cause is `kill` after `JobRegistry.kill`, `teardown` after an owner or service cancel, and `producer` otherwise; `dsh-tool-jobs` uses it to skip notices nobody can read.
+`activeJobCount` counts authoritative records per exact owner or in the shared unowned bucket. `settle` records the terminal outcome once (merging a recorded kill reason into a `killed` detail), clears the progress line, trims the ring to the settled cap (keeping every byte the model cursor has not consumed), resolves every waiter and detaches its cancellation listener before publishing the `jobs/settled` journal or live `settled` event, then emits the ring's final `output` signal. The cause is `kill` after `JobRegistry.kill`, `teardown` after an owner or service cancel, and `producer` otherwise; `dsh-tool-jobs` uses it to skip notices nobody can read.
 
 ### Teardown
 

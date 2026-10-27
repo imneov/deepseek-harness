@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
@@ -157,6 +157,84 @@ function scriptedSource(reads: { text: string; lossy?: boolean }[], channel?: 's
     },
   }
 }
+
+describe('LocalJobRegistry.observe', () => {
+  it.each(['completed', 'killed', 'failed'] as const)('collects an empty %s terminal output exactly once', async (status) => {
+    const ctx = await harness()
+    const p = producer()
+    const id = ctx.jobs.start(p.spec)
+    try {
+      const running = ctx.jobs.read(id)
+      expect(running.receipt.terminalRead).toBe('not-terminal')
+      expect(ctx.jobs.observe(id).terminalResult).toBe('not-terminal')
+      p.settle({ status })
+      await ctx.jobs.wait(id, 1000)
+      expect(ctx.jobs.observe(id).terminalResult).toBe('pending')
+      expect(ctx.jobs.readAt(id, 0).chunks).toEqual([])
+      expect(ctx.jobs.observe(id).terminalResult).toBe('pending')
+      expect(ctx.jobs.read(id).receipt).toEqual({ ...running.receipt, terminalRead: 'first' })
+      expect(ctx.jobs.observe(id).terminalResult).toBe('collected')
+      expect(ctx.jobs.read(id).receipt).toEqual({ ...running.receipt, terminalRead: 'repeat' })
+    } finally {
+      p.settle({ status })
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('observes exact-owner terminal delivery without consuming output', async () => {
+    const ctx = await harness({ settledRetainBytes: 1 })
+    let active: ReturnType<typeof producer> | undefined
+    try {
+      const owner = await liveAgent(ctx, 'observer-owner')
+      const foreign = await liveAgent(ctx, 'observer-foreign')
+      const p = producer({ owner })
+      active = p
+      const id = ctx.jobs.start(p.spec)
+      const unowned = producer()
+      const unownedId = ctx.jobs.start(unowned.spec)
+      unowned.settle({ status: 'completed' })
+      p.job().append('retained stream')
+      const running = ctx.jobs.observe(id, owner.id)
+      expect(owner.session.snapshotEvents()).toContainEqual(expect.objectContaining({
+        type: 'jobs/registered', ignorable: true, data: expect.objectContaining({
+          registryEpoch: running.registryEpoch, instanceId: running.instanceId, terminalResult: 'not-terminal',
+        }),
+      }))
+      expect(running.terminalResult).toBe('not-terminal')
+      expect(() => ctx.jobs.observe(id, foreign.id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(unownedId, owner.id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(id)).toThrow('another session')
+      expect(() => ctx.jobs.observe(JobId('missing'), owner.id)).toThrow('unknown job')
+      p.settle({ status: 'completed', result: 'final value' })
+      await ctx.jobs.wait(id, 1000, owner.id)
+      const pending = ctx.jobs.observe(id, owner.id)
+      expect(pending).toMatchObject({
+        registryEpoch: running.registryEpoch,
+        instanceId: running.instanceId,
+        terminalResult: 'pending',
+        job: { id, status: 'completed' },
+      })
+      expect(ctx.jobs.observe(id, owner.id)).toEqual(pending)
+      expect(ctx.jobs.readAt(id, 0, owner.id).chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
+      const first = ctx.jobs.read(id, owner.id)
+      const collected = owner.session.snapshotEvents().find(event => event.type === 'jobs/collected')
+      expect(collected?.data.job).toEqual(first.job)
+      expect(first.result).toBe('final value')
+      expect(first.chunks.map(chunk => chunk.text)).toEqual(['retained stream'])
+      expect(first.receipt).toEqual({
+        registryEpoch: running.registryEpoch, instanceId: running.instanceId, jobId: id, terminalRead: 'first',
+      })
+      expect(ctx.jobs.observe(id, owner.id).terminalResult).toBe('collected')
+      const repeat = ctx.jobs.read(id, owner.id)
+      expect(repeat.result).toBeUndefined()
+      expect(repeat.chunks).toEqual([])
+      expect(repeat.receipt).toEqual({ ...first.receipt, terminalRead: 'repeat' })
+    } finally {
+      active?.settle({ status: 'completed' })
+      await ctx.fiber.dispose()
+    }
+  })
+})
 
 describe('LocalJobRegistry.start', () => {
   it('preserves the SessionId brand on public owner projections', () => {
@@ -586,6 +664,45 @@ describe('LocalJobRegistry.wait', () => {
     expect(seen).toMatchObject([{ type: 'settled', cause: 'producer', job: { id, status: 'completed' } }])
   })
 
+  it('keeps an owned terminal wait awaited when its settled journal listener aborts', async () => {
+    const ctx = await harness({ settledRetainBytes: 4 })
+    await ctx.plugin(SessionStore)
+    const owner = await liveAgent(ctx, 'settled-journal-owner')
+    ctx.effect(() => ctx.sessions.enter(owner.session))
+    ctx.sessions.announce(owner.session)
+    const p = producer({ owner })
+    const controller = new AbortController()
+    const seen = collect(ctx, { owner: owner.id }, ['settled'])
+    let callbacks = 0
+    ctx.on('session/event', (session, event) => {
+      if (session !== owner.session || event.type !== 'jobs/settled') return
+      callbacks += 1
+      expect(ctx.jobs.observe(event.data.job.id, owner.id)).toMatchObject({
+        terminalResult: 'pending', job: { status: 'completed' },
+      })
+      controller.abort()
+    })
+    try {
+      const id = ctx.jobs.start(p.spec)
+      p.job().append('retained stream')
+      ctx.jobs.read(id, owner.id)
+      const wait = ctx.jobs.wait(id, 5_000, owner.id, controller.signal)
+      p.settle({ status: 'completed', detail: 'exit code: 0' })
+      const outcome = await wait.catch((error: unknown) => error)
+      expect(callbacks).toBe(1)
+      expect(controller.signal.aborted).toBe(true)
+      expect(outcome).toMatchObject({ status: 'completed', output: { total: 15, earliest: 11 } })
+      expect(seen).toMatchObject([{ type: 'settled', awaited: true }])
+      expect(owner.session.snapshotEvents()).toContainEqual(expect.objectContaining({
+        type: 'jobs/settled', ignorable: true,
+        data: expect.objectContaining({ job: expect.objectContaining({ status: 'completed', output: { total: 15, earliest: 11 } }) }),
+      }))
+    } finally {
+      p.settle({ status: 'completed' })
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('an abort landing after settlement still delivers the terminal projection it owes', async () => {
     const ctx = await harness()
     const controller = new AbortController()
@@ -825,6 +942,7 @@ describe('LocalJobRegistry owner cleanup', () => {
 
     await disposeAgentScope(owner)
     expect(seen).toMatchObject([{ type: 'settled', cause: 'teardown', job: { status: 'killed' } }])
+    expect(owner.session.snapshotEvents().some(event => event.type === 'jobs/collected')).toBe(false)
   })
 
   it('attaches one cleanup per owner and drains all owned jobs with the scope', async () => {

@@ -3,6 +3,9 @@ scenario: bash-tool
 profile: sdk
 composition: sdk-default
 recording: live
+# Foreground job collection does not depend on the host's sandbox backend or ABI.
+environment:
+  DSH_PERMISSION_MODE: danger-full-access
 header:
   class: sdk-default
   pin: true

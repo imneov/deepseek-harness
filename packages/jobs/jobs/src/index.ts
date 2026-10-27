@@ -12,7 +12,7 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { installJobArchiveAdmission } from './archive-admission.ts'
-import type { JobEvents, JobId, JobOutputRead, JobRead, JobSpec, JobView } from './types.ts'
+import type { JobEvents, JobId, JobObservation, JobOutputRead, JobRead, JobSpec, JobView } from './types.ts'
 
 export { JobId } from './types.ts'
 export type {
@@ -28,6 +28,11 @@ export type {
   JobKind,
   JobKindMap,
   JobOutcome,
+  JobObservation,
+  JobObservationRecord,
+  JobReadReceipt,
+  JobRegistryEpoch,
+  JobInstanceId,
   JobOutputRead,
   JobOutputSource,
   JobRead,
@@ -126,6 +131,17 @@ export abstract class JobRegistry extends Service {
   abstract get(id: JobId, caller?: SessionId): JobView
 
   /**
+   * Observe identity and terminal collection without moving the cursor or collecting a result.
+   * Unlike list/get, ownership must match exactly: a session cannot observe unowned work.
+   * Throws for an unknown id or a mismatched owner. A missing historical receipt is unknown,
+   * never evidence of collection. Compare epoch and instance as well as the job id after restart.
+   * @param id - job to observe.
+   * @param caller - exact owner; omission selects only unowned jobs.
+   * @returns fresh state and stable identity for this registry lifetime and registration.
+   */
+  abstract observe(id: JobId, caller?: SessionId): JobObservation
+
+  /**
    * Consume the ring from the model cursor and advance it to the current
    * total. After settlement the first read also carries the producer's
    * result. Throws for an unknown or foreign job.
@@ -176,7 +192,9 @@ export abstract class JobRegistry extends Service {
    * Drop one settled job's record from the visible set and announce
    * `removed`. For a caller that collected the terminal state through its own
    * {@link wait} and never handed the id to the model, such as a shell tool's
-   * foreground call. Throws for a job that is still live, unknown, or foreign.
+   * foreground call. Records collection with source `remove` before dropping an unread
+   * terminal record; owner/service teardown is not a collection acknowledgement.
+   * Throws for a job that is still live, unknown, or foreign.
    * @param id - settled job to drop.
    * @param caller - removing session checked against the owner.
    */

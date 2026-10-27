@@ -94,6 +94,9 @@ export function redactSessionSnapshotIds(logs: readonly string[]): string[] {
         claim(item, 'retry')
       } else if (childKey === 'runId') {
         claim(item, 'workflow')
+      } else if (childKey === 'registryEpoch' && (recordType === 'tool/result'
+        || recordType === 'jobs/registered' || recordType === 'jobs/settled' || recordType === 'jobs/collected')) {
+        claim(item, 'id')
       } else if (ID_KEY_RE.test(childKey)) {
         claim(item, 'id')
       }

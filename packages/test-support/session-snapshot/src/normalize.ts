@@ -385,6 +385,7 @@ export function normalizeSessionLog(
       if ('durationMs' in data) data.durationMs = 0
     }
     normalizeFeedbackClocks(record)
+    normalizeJobClocks(record)
     if (record.type === 'goal/change' && record.data !== null && typeof record.data === 'object') {
       const data = record.data as Record<string, unknown>
       if ('createdAt' in data) data.createdAt = 0
@@ -571,8 +572,19 @@ export function scrubSessionSnapshot(rawLog: string): string {
       record.sourceEventSeqs = decodeSeqRanges(record.sourceEventSeqs)
     }
     normalizeFeedbackClocks(record)
+    normalizeJobClocks(record)
     return JSON.stringify(record)
   }).join('\n')
+}
+
+/** Normalize clocks only in registry-owned observation journal records. */
+function normalizeJobClocks(record: Record<string, unknown>): void {
+  if (record.type !== 'jobs/registered' && record.type !== 'jobs/settled' && record.type !== 'jobs/collected') return
+  if (record.data === null || typeof record.data !== 'object') return
+  const job = (record.data as { job?: Record<string, unknown> }).job
+  if (job === undefined) return
+  if ('startedAt' in job) job.startedAt = 0
+  if ('finishedAt' in job) job.finishedAt = 0
 }
 
 /** Normalize service-owned feedback clocks without touching user-authored payloads. */

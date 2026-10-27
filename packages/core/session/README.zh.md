@@ -57,6 +57,8 @@ session.deriveMessages()         // the derived model history
 
 `system/message` 承载渲染后的系统提示词：第一条是 surface 第 0 号节点，准入依据已准备调用的能力，不具备能力的路由将非空渲染文本归并到首个系统节点，延续中的 `in-history` 序列则在缓存历史之后追加；空系统节点不投影为消息，因此清除提示词必须为所有生效的系统节点记录空内容替换，而非仅替换最新节点；当第 0 号节点是 `system/message` 时，surface 折叠拒绝覆盖它的替换，除非替换事件本身是恰好覆盖该节点的 `system/message`，而后续系统节点不受保护，压缩范围可以遮蔽它们（[决策](../../../.agents/notes/implemented/architecture/2026-09-02-system-prompt-as-surface-node.zh.md)）。
 
+`session.appendIgnorable(type, data)` 显式标记可选的仅日志元数据，允许不认识类型的读取方保留记录而不解释。其类型排除产生消息的事件。它与 `append` 使用相同的 JSON 校验、不可变快照及发布路径；普通追加仍要求读取方认识类型。两个方法都不等待存储；配置了持久化时，须等待 `ctx.sessions.flush(session)` 才保证持久性。
+
 ### 读取日志
 
 `session.seq` 无需物化数组即可读取当前日志长度，`session.eventAt(seq)` 按序列号读取单个已接受且深度冻结的事件。`session.snapshotEvents(fromSeq?, toSeqExclusive?)` 会物化半开区间的冻结稳定快照；当前完整快照会缓存到下一次追加。`eventAt()`、`snapshotEvents()` 和 `ownEvents()` 已弃用：现有逻辑可以暂不迁移，但禁止新增生产调用。仓库测试文件可以在限定范围的 lint 豁免下使用这三个读取方法（[策略](../../../.agents/notes/implemented/architecture/2026-09-09-deprecate-synchronous-session-event-reads.zh.md)）。只需要长度的调用方使用 `seq`。

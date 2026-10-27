@@ -1325,6 +1325,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'a fresh projection.',
       },
       {
+        signature: 'abstract observe(id: JobId, caller?: SessionId): JobObservation',
+        description: 'Observe identity and terminal collection without moving the cursor or collecting a result. Unlike list/get, ownership must match exactly: a session cannot observe unowned work. Throws for an unknown id or a mismatched owner. A missing historical receipt is unknown, never evidence of collection. Compare epoch and instance as well as the job id after restart.',
+        parameters: [{ name: 'id', description: 'job to observe.' }, { name: 'caller', description: 'exact owner; omission selects only unowned jobs.' }],
+        returns: 'fresh state and stable identity for this registry lifetime and registration.',
+      },
+      {
         signature: 'abstract read(id: JobId, caller?: SessionId): JobRead',
         description: 'Consume the ring from the model cursor and advance it to the current total. After settlement the first read also carries the producer\'s result. Throws for an unknown or foreign job.',
         parameters: [{ name: 'id', description: 'job to read.' }, { name: 'caller', description: 'reading session checked against the owner.' }],
@@ -1350,7 +1356,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'abstract remove(id: JobId, caller?: SessionId): void',
-        description: 'Drop one settled job\'s record from the visible set and announce `removed`. For a caller that collected the terminal state through its own wait and never handed the id to the model, such as a shell tool\'s foreground call. Throws for a job that is still live, unknown, or foreign.',
+        description: 'Drop one settled job\'s record from the visible set and announce `removed`. For a caller that collected the terminal state through its own wait and never handed the id to the model, such as a shell tool\'s foreground call. Records collection with source `remove` before dropping an unread terminal record; owner/service teardown is not a collection acknowledgement. Throws for a job that is still live, unknown, or foreign.',
         parameters: [{ name: 'id', description: 'settled job to drop.' }, { name: 'caller', description: 'removing session checked against the owner.' }],
       },
       {
@@ -5488,6 +5494,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type JobId = Branded<\'JobId\'>;',
   },
   {
+    name: 'JobInstanceId',
+    declaration: 'export type JobInstanceId = Branded<\'JobInstanceId\'>;',
+  },
+  {
     name: 'JobKillRequest',
     declaration: 'export interface JobKillRequest {\n    readonly sessionId: SessionId;\n    readonly jobId: JobId;\n}',
   },
@@ -5512,6 +5522,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface JobListRequest {\n    readonly sessionId: SessionId;\n}',
   },
   {
+    name: 'JobObservation',
+    declaration: 'export interface JobObservation {\n    readonly job: JobView;\n    readonly registryEpoch: JobRegistryEpoch;\n    readonly instanceId: JobInstanceId;\n    readonly terminalResult: \'not-terminal\' | \'pending\' | \'collected\';\n}',
+  },
+  {
     name: 'JobOutcome',
     declaration: 'export interface JobOutcome {\n    status: \'completed\' | \'killed\' | \'failed\';\n    detail?: string;\n    result?: string;\n}',
   },
@@ -5525,7 +5539,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'JobRead',
-    declaration: 'export interface JobRead {\n    chunks: readonly JobChunk[];\n    lossy: boolean;\n    result?: string;\n    job: JobView;\n}',
+    declaration: 'export interface JobRead {\n    receipt: JobReadReceipt;\n    chunks: readonly JobChunk[];\n    lossy: boolean;\n    result?: string;\n    job: JobView;\n}',
+  },
+  {
+    name: 'JobReadReceipt',
+    declaration: 'export interface JobReadReceipt {\n    readonly registryEpoch: JobRegistryEpoch;\n    readonly jobId: JobId;\n    readonly instanceId: JobInstanceId;\n    readonly terminalRead: \'not-terminal\' | \'first\' | \'repeat\';\n}',
+  },
+  {
+    name: 'JobRegistryEpoch',
+    declaration: 'export type JobRegistryEpoch = Branded<\'JobRegistryEpoch\'>;',
   },
   {
     name: 'JobSettleCause',
@@ -6429,7 +6451,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'Session',
-    declaration: 'export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    static create(id: SessionId, seed?: readonly SessionEvent[], header?: SessionHeader, inheritedEventCount?: SessionLogOffset, projections?: readonly SessionMessageProjection[]): Session;\n    static fromRestore(id: SessionId, seed: readonly SessionEvent[], header: SessionHeader, inheritedEventCount: SessionLogOffset, eventState: SessionSeedEventState, projections?: readonly SessionMessageProjection[]): Session;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [\n        opts: SurfaceIntent<T>\n    ] : [\n    ]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}',
+    declaration: 'export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    static create(id: SessionId, seed?: readonly SessionEvent[], header?: SessionHeader, inheritedEventCount?: SessionLogOffset, projections?: readonly SessionMessageProjection[]): Session;\n    static fromRestore(id: SessionId, seed: readonly SessionEvent[], header: SessionHeader, inheritedEventCount: SessionLogOffset, eventState: SessionSeedEventState, projections?: readonly SessionMessageProjection[]): Session;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [\n        opts: SurfaceIntent<T>\n    ] : [\n    ]): SessionEvent<T>;\n    appendIgnorable<T extends Exclude<SessionEventType, SurfaceEventType>>(type: T, data: SessionEventMap[T]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionE /* …truncated — full shape in source */',
   },
   {
     name: 'SessionAccess',

@@ -724,7 +724,27 @@ export class Session {
     data: SessionEventMap[T],
     ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []
   ): SessionEvent<T> {
-    const surfaceOpts: SurfaceIntent | undefined = opts[0]
+    return this.appendRecord(type, data, opts[0])
+  }
+
+  /**
+   * Append optional log-only metadata that readers unaware of its type may retain and ignore.
+   * Never use for facts needed to reconstruct model history. Default append remains required-on-read.
+   * Commits synchronously in memory; await the store's flush for configured persistence durability.
+   * @param type - a log-only event type; message-producing types are excluded.
+   * @param data - losslessly JSON-serializable payload, snapshotted before publication.
+   * @returns the committed event with an explicit ignorable marker.
+   */
+  appendIgnorable<T extends Exclude<SessionEventType, SurfaceEventType>>(type: T, data: SessionEventMap[T]): SessionEvent<T> {
+    return this.appendRecord(type, data, undefined, true)
+  }
+
+  private appendRecord<T extends SessionEventType>(
+    type: T,
+    data: SessionEventMap[T],
+    surfaceOpts?: SurfaceIntent,
+    ignorable?: true,
+  ): SessionEvent<T> {
     const surfaceMetadata = {
       ...surfaceOpts?.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: surfaceOpts.sourceEventSeqs },
       ...surfaceOpts?.surfaceOp === undefined ? {} : { surfaceOp: surfaceOpts.surfaceOp },
@@ -746,6 +766,7 @@ export class Session {
       seq: SessionSeq(this.log.length),
       time: Date.now(),
       data: dataSnapshot,
+      ...ignorable === true ? { ignorable } : {},
       ...(surfaceMetadataSnapshot as { surfaceOp?: unknown; sourceEventSeqs?: unknown }),
     } as unknown as SessionEvent<T>)
     validateSessionEventData(event, `session event "${type}" at seq ${event.seq}`)

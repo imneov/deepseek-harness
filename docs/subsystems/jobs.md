@@ -259,9 +259,13 @@ interface JobView {
 
 `JobRegistry.list`, `get`, `read`, `readAt`, `kill`, and `wait` each accept the caller’s `SessionId`; omitting it permits only unowned jobs, while a session may also access its own jobs.
 
+`JobRegistry.observe(id, caller)` returns `JobObservation`: `job`, `registryEpoch`, `instanceId`, and `terminalResult` (`not-terminal`, `pending`, or `collected`). It requires an exact owner match and never advances the cursor or collects output. `JobReadReceipt` carries `registryEpoch`, `jobId`, `instanceId`, and `terminalRead` (`not-terminal`, `first`, or `repeat`). A first terminal read collects even empty output; collection does not establish model understanding. `JobObservationRecord` adds an optional `collection` source (`read` or explicit foreground `remove`) to the observation stored in the owner Session by the optional log-only `jobs/registered`, `jobs/settled`, and `jobs/collected` events. Their envelopes are explicitly ignorable; durability follows the standard Session flush barrier. Missing historical instances remain unknown or unrecoverable, and identity comparisons include epoch and instance.
+
 ```ts type-equiv
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 interface JobRead {
+  /** Identity and collection fact for this read, including empty terminal output. */
+  receipt: JobReadReceipt
   /** Ring chunks appended since the model cursor, in offset order; every channel included. */
   chunks: readonly JobChunk[]
   /** True when the cursor fell below the oldest retained byte, so bytes are missing before `chunks`. */
@@ -427,6 +431,17 @@ abstract list(caller?: SessionId): JobView[]
 abstract get(id: JobId, caller?: SessionId): JobView
 
 /**
+ * Observe identity and terminal collection without moving the cursor or collecting a result.
+ * Unlike list/get, ownership must match exactly: a session cannot observe unowned work.
+ * Throws for an unknown id or a mismatched owner. A missing historical receipt is unknown,
+ * never evidence of collection. Compare epoch and instance as well as the job id after restart.
+ * @param id - job to observe.
+ * @param caller - exact owner; omission selects only unowned jobs.
+ * @returns fresh state and stable identity for this registry lifetime and registration.
+ */
+abstract observe(id: JobId, caller?: SessionId): JobObservation
+
+/**
  * Consume the ring from the model cursor and advance it to the current
  * total. After settlement the first read also carries the producer's
  * result. Throws for an unknown or foreign job.
@@ -477,7 +492,9 @@ abstract wait(id: JobId, timeoutMs: number, caller?: SessionId, signal?: AbortSi
  * Drop one settled job's record from the visible set and announce
  * `removed`. For a caller that collected the terminal state through its own
  * {@link wait} and never handed the id to the model, such as a shell tool's
- * foreground call. Throws for a job that is still live, unknown, or foreign.
+ * foreground call. Records collection with source `remove` before dropping an unread
+ * terminal record; owner/service teardown is not a collection acknowledgement.
+ * Throws for a job that is still live, unknown, or foreign.
  * @param id - settled job to drop.
  * @param caller - removing session checked against the owner.
  */

@@ -3,7 +3,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type {
-  JobEvent, JobEventFilter, JobEventListener, JobHooks, JobOutputSource, JobOutputRead, JobRead, JobSpec, JobView,
+  JobEvent, JobEventFilter, JobEventListener, JobHooks, JobObservation, JobRegistryEpoch, JobInstanceId,
+  JobOutputSource, JobOutputRead, JobRead, JobSpec, JobView,
 } from '@deepseek-ai/dsh-jobs'
 
 /** Compile-time probe: does `Shape` carry a `Key` member? */
@@ -53,8 +54,16 @@ class StubJobRegistry extends JobRegistry {
     return this.view(id, caller)
   }
 
+  observe(id: JobId, caller?: SessionId): JobObservation {
+    return { job: this.view(id, caller), registryEpoch: 'epoch' as JobRegistryEpoch,
+      instanceId: 'instance' as JobInstanceId, terminalResult: 'not-terminal' }
+  }
+
   read(id: JobId, caller?: SessionId): JobRead {
-    return { chunks: [], lossy: false, job: this.view(id, caller) }
+    return { chunks: [], lossy: false, job: this.view(id, caller), receipt: {
+      registryEpoch: 'epoch' as JobRegistryEpoch, instanceId: 'instance' as JobInstanceId,
+      jobId: id, terminalRead: 'not-terminal',
+    } }
   }
 
   readAt(_id: JobId, from: number): JobOutputRead {

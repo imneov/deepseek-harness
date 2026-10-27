@@ -26,3 +26,9 @@ export type JobId = Branded<'JobId'>
 export function JobId(id: string): JobId {
   return id as JobId
 }
+
+/** Identifies one registry lifetime; changes whenever its provider is recreated. */
+export type JobRegistryEpoch = Branded<'JobRegistryEpoch'>
+
+/** Identifies one registration independently of a reusable human-readable job id. */
+export type JobInstanceId = Branded<'JobInstanceId'>

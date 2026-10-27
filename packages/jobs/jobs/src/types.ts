@@ -6,10 +6,11 @@
  */
 
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { JobId } from './brand.ts'
+import type { JobId, JobRegistryEpoch, JobInstanceId } from './brand.ts'
 import type { JobChannel, JobChunk, JobKind, JobView } from './view.ts'
 
 export { JobId } from './brand.ts'
+export type { JobRegistryEpoch, JobInstanceId } from './brand.ts'
 export type { JobChannel, JobChunk, JobKind, JobKindMap, JobStatus, JobView } from './view.ts'
 
 /** Terminal result supplied by a producer through {@link JobHooks.done}. */
@@ -157,8 +158,45 @@ export interface JobSpec {
   run(job: JobHandle): JobHooks
 }
 
+/** Non-consuming exact-owner observation; collection does not imply model understanding. */
+export interface JobObservation {
+  readonly job: JobView
+  readonly registryEpoch: JobRegistryEpoch
+  readonly instanceId: JobInstanceId
+  /** Live work, terminal output awaiting a read, or terminal output already handed to a reader. */
+  readonly terminalResult: 'not-terminal' | 'pending' | 'collected'
+}
+
+/** Optional owner-session journal payload; durability follows the standard Session flush barrier. */
+export interface JobObservationRecord extends JobObservation {
+  /** Present only for collected: terminal read, or the controller's explicit foreground collection acknowledgement. */
+  readonly collection?: 'read' | 'remove'
+}
+
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    /** Registration committed in the local registry; old readers may ignore this log-only fact. */
+    'jobs/registered': JobObservationRecord
+    /** Terminal registry state; does not imply delivery or process survival after restart. */
+    'jobs/settled': JobObservationRecord
+    /** Terminal read or explicit foreground removal acknowledged collection; never model understanding. */
+    'jobs/collected': JobObservationRecord
+  }
+}
+
+/** Stable identity and collection fact captured atomically by one consuming read. */
+export interface JobReadReceipt {
+  readonly registryEpoch: JobRegistryEpoch
+  readonly jobId: JobId
+  readonly instanceId: JobInstanceId
+  /** First terminal read hands out the result; repeats do not. Neither proves model admission. */
+  readonly terminalRead: 'not-terminal' | 'first' | 'repeat'
+}
+
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 export interface JobRead {
+  /** Identity and collection fact for this read, including empty terminal output. */
+  receipt: JobReadReceipt
   /** Ring chunks appended since the model cursor, in offset order; every channel included. */
   chunks: readonly JobChunk[]
   /** True when the cursor fell below the oldest retained byte, so bytes are missing before `chunks`. */
