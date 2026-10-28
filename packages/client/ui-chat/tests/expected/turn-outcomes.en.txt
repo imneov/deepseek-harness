@@ -1,0 +1,22 @@
+[
+  {
+    "reason": "blocked",
+    "label": "Blocked",
+    "announcement": "Blocked"
+  },
+  {
+    "reason": "completed",
+    "label": "Completed in 1s",
+    "announcement": "Completed"
+  },
+  {
+    "reason": "error",
+    "label": "Failed",
+    "announcement": "Failed"
+  },
+  {
+    "reason": "aborted",
+    "label": "Stopped",
+    "announcement": "Stopped"
+  }
+]

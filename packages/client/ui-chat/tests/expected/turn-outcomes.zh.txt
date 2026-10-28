@@ -1,0 +1,22 @@
+[
+  {
+    "reason": "blocked",
+    "label": "已阻止",
+    "announcement": "已阻止"
+  },
+  {
+    "reason": "completed",
+    "label": "已完成，用时 1秒",
+    "announcement": "已完成"
+  },
+  {
+    "reason": "error",
+    "label": "处理失败",
+    "announcement": "处理失败"
+  },
+  {
+    "reason": "aborted",
+    "label": "已停止",
+    "announcement": "已停止"
+  }
+]
