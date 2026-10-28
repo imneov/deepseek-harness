@@ -22,6 +22,7 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import { SessionSeq, type SessionId } from '@deepseek-ai/dsh-session/types'
+import type { TurnEndReason } from '@deepseek-ai/dsh-session'
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
 import type { KeyedSnapshotSelectorHook, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
@@ -2654,6 +2655,39 @@ describe('ChatView', () => {
     expect(processToggle.getAttribute('aria-expanded')).toBe('false')
     expect(processRow.getAttribute('hidden')).toBe('until-found')
   }))
+
+  it.each(['en', 'zh'] as const)('renders recorded Turn outcomes without false completion in %s', async (locale) => {
+    const reasons: readonly TurnEndReason[] = [
+      { kind: 'blocked' }, { kind: 'completed' },
+      { kind: 'error', error: { message: 'request failed', code: 'UNKNOWN' } },
+      { kind: 'aborted', reason: { kind: 'legacy' } },
+    ]
+    const outcomes = reasons.map((reason) => {
+      const h = makeHarness({ chat: chatSnapshotFixture({
+        turnTimings: new Map([[1, { startTime: 1_000, endTime: 1_000 }]]),
+        turnEnds: new Map([[1, 2]]),
+        turnEndReasons: new Map([[1, reason]]),
+      }) })
+      h.props.t = makeTranslate(locale === 'en' ? { ...commonEn, ...en } : { ...commonZh, ...zh })
+      const view = render(<h.ChatView {...h.props} />)
+      const control = turnProcessControl(view.container)!
+      expect(control).not.toBeNull()
+      expect(control.disabled).toBe(true)
+      expect(control.getAttribute('data-turn-process-messages')).toBe('0')
+      expect(control.getAttribute('data-turn-process-tool-calls')).toBe('0')
+      const result = {
+        reason: reason.kind,
+        label: control.textContent,
+        announcement: view.getByRole('status').textContent,
+      }
+      view.unmount()
+      return result
+    })
+    const blocked = outcomes[0]!
+    expect(blocked.label).toBe(locale === 'en' ? 'Blocked' : '已阻止')
+    expect(blocked.announcement).toBe(blocked.label)
+    await expect(JSON.stringify(outcomes, null, 2) + '\n').toMatchFileSnapshot(`./expected/turn-outcomes.${locale}.txt`)
+  })
 
   it('folds a recorded Turn end independently of remaining history or a loaded start', () => {
     const h = makeHarness({
