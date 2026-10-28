@@ -80,6 +80,8 @@ During uninterrupted following, local transcript and steering echoes remain moun
 
 When Chat ends with an open Turn control and that Turn has no visible input, the first local transcript echo precedes the control. Other echoes remain at the flow tail. The control and echoes share one keyed list, so arrival of the control preserves the echo's mounted identity. Durable inputs replace their matching echoes in the same render.
 
+Blocked Turns retain a localized Blocked status without elapsed time or a completion announcement, including rejected Turns with no model or tool activity.
+
 Work-details modes control process-group display and reasoning previews. Compact, Standard, and Detailed fold eligible completed Turns without hiding the final answer; Verbose retains the duration/status header without a collapse action and shows historical process rows directly. The [business-rule reference](src/client/conversation-nodes/README.md#display-modes) contains the mode table, title behavior, whole-Turn eligibility, clocks, and disclosure resets.
 
 -----
