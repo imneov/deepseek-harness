@@ -1968,34 +1968,28 @@ describe('JsonlSessionPersistence: durability and crash semantics', () => {
     expect(aggregate?.errors).toEqual([failure])
   })
 
-  it('omits a listed artifact removed after discovery', async () => {
+  it('omits a listed artifact removed while its header is read', async () => {
     const m = meta('vanishing-snapshot')
     await writeLog(ctx.sessionPersistence, m, oneTurnLog())
     const persistence = ctx.sessionPersistence as unknown as {
-      listArtifacts(): Promise<Array<{ header: SessionHeader; path: string }>>
+      readGenerationHeader(...args: unknown[]): Promise<SessionHeader | undefined>
     }
-    const listArtifacts = persistence.listArtifacts.bind(persistence)
-    const discovery = vi.spyOn(persistence, 'listArtifacts').mockImplementation(async () => {
-      const artifacts = await listArtifacts()
-      await rm(artifacts[0]!.path)
-      return artifacts
+    const readHeader = persistence.readGenerationHeader.bind(persistence)
+    const discovery = vi.spyOn(persistence, 'readGenerationHeader').mockImplementation(async (...args) => {
+      const header = await readHeader(...args)
+      await rm(rawLogPath(root, m.cwd, m.id))
+      return header
     })
-
     await expect(ctx.sessionPersistence.list()).resolves.toEqual([])
     discovery.mockRestore()
   })
 
   it('surfaces non-ENOENT stat failures during listing', async () => {
-    const persistence = ctx.sessionPersistence as unknown as {
-      listArtifacts(): Promise<Array<{ header: SessionHeader; path: string }>>
-    }
-    const discovery = vi.spyOn(persistence, 'listArtifacts').mockResolvedValue([{
-      header: meta('snapshot-stat-failure'),
-      path: `${root}\0snapshot-stat-failure`,
-    }])
-
-    await expect(ctx.sessionPersistence.list()).rejects.toThrow(/null bytes/)
-    discovery.mockRestore()
+    const m = meta('snapshot-stat-failure')
+    await writeLog(ctx.sessionPersistence, m, oneTurnLog())
+    statFailure.path = rawLogPath(root, m.cwd, m.id)
+    statFailure.error = Object.assign(new Error('snapshot stat denied'), { code: 'EACCES' })
+    await expect(ctx.sessionPersistence.list()).rejects.toBe(statFailure.error)
   })
 
   it('forwards list cancellation and awaits in-flight discovery cleanup', async () => {
@@ -2031,20 +2025,35 @@ describe('JsonlSessionPersistence: durability and crash semantics', () => {
   it('checks cancellation after an uncancellable list stat settles', async () => {
     const m = meta('snapshot-stat-cancellation')
     await writeLog(ctx.sessionPersistence, m, oneTurnLog())
-    const persistence = ctx.sessionPersistence as unknown as {
-      listArtifacts(signal?: AbortSignal): Promise<Array<{ header: SessionHeader; path: string }>>
-    }
-    const discovery = vi.spyOn(persistence, 'listArtifacts').mockResolvedValue([{
-      header: m,
-      path: rawLogPath(root, m.cwd, m.id),
-    }])
+    await ctx.sessionPersistence.list()
+    const entered = Promise.withResolvers<undefined>()
+    const resume = Promise.withResolvers<undefined>()
     const reason = new Error('JSONL list stat cancelled')
     const controller = new AbortController()
+    const original = stat.bind(undefined)
+    const filesystem = await import('node:fs/promises')
+    const probe = vi.spyOn(filesystem, 'stat').mockImplementation(async (...args: Parameters<typeof stat>) => {
+      const identity = await original(...args)
+      if (String(args[0]) === rawLogPath(root, m.cwd, m.id)) {
+        entered.resolve(undefined)
+        await resume.promise
+      }
+      return identity
+    })
     const pending = ctx.sessionPersistence.list({ signal: controller.signal })
-    queueMicrotask(() => { controller.abort(reason) })
-
-    await expect(pending).rejects.toBe(reason)
-    expect(discovery).toHaveBeenCalledWith(controller.signal)
+    const result = pending.then(value => ({ value }), (error: unknown) => ({ error }))
+    const deadline = setTimeout(() => { entered.reject(new Error('list stat never entered')) }, 5000)
+    try {
+      await entered.promise
+      controller.abort(reason)
+      resume.resolve(undefined)
+      expect(await result).toEqual({ error: reason })
+    } finally {
+      clearTimeout(deadline)
+      resume.resolve(undefined)
+      await result
+      probe.mockRestore()
+    }
   })
 })
 

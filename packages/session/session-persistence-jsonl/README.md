@@ -48,7 +48,7 @@ Choose this backend when consumers benefit from one artifact per session — nav
 | `compression` | `'zstd'` | Physical encoding: `'zstd'` checksummed frames, or `'none'` newline-delimited UTF-8 text |
 | `listConcurrency` | `16` | Positive integer limiting concurrent metadata reads in each discovery phase |
 
-Metadata discovery uses bounded concurrency for directories, headers, and file revisions, preserving discovery order. On failure or cancellation, it stops scheduling new reads and waits for in-flight reads to close before rejecting. Each call rescans storage; it does not cache list results.
+Metadata discovery uses bounded concurrency for directories, headers, and file revisions, preserving discovery order. On failure or cancellation, it stops scheduling new reads and waits for in-flight reads to close before rejecting. Each call rescans storage and selects the highest generation, sharing one physical metadata snapshot for listed sizes, revisions, and the complete historical corpus fingerprint. Validated headers are reused only while device, inode, size, modification time, and change time remain equal; returned headers are detached from the cache. Unreadable headers remain part of the corpus fingerprint, and failed reads are not cached.
 
 Live-event write batching is not configuration: the batching window is the seam's internal scheduling policy inside each write handle.
 
