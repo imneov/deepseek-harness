@@ -86,7 +86,7 @@ export const JsonlCompressionSchema: z<JsonlCompression> = z.union([
   z.const('none'),
 ]).default(DEFAULT_COMPRESSION)
 
-/** Plugin config for the JSONL backend's root and physical encoding. */
+/** Plugin config for the JSONL backend's root, physical encoding, and metadata discovery. */
 export interface Config {
   /**
    * Root directory for all session files. Required (no default): a default of
@@ -98,6 +98,8 @@ export interface Config {
   root: string
   /** Physical encoding; defaults to checksummed Zstandard frames. */
   compression?: JsonlCompression
+  /** Maximum concurrent metadata reads per discovery phase; positive integer, defaults to 16. */
+  listConcurrency?: number
 }
 
 /** One stored event graph whose producer has established immutable sharing. */
@@ -246,6 +248,7 @@ class JsonlSessionPersistence extends SessionPersistence {
   static Config: z<Config> = z.object({
     root: z.string().required(),
     compression: JsonlCompressionSchema,
+    listConcurrency: z.number().step(1).min(1).default(16),
   })
 
   /** Backend label for diagnostics and effects; shadows `Service.name` without changing the service key. */
@@ -483,24 +486,25 @@ class JsonlSessionPersistence extends SessionPersistence {
     const artifacts = await this.listArtifacts(signal)
     const corpusRevision = artifacts.some(artifact => artifact.sourceVersion < SESSION_FORMAT_VERSION)
       ? await this.historicalCorpusRevision(signal) : undefined
-    for (const artifact of artifacts) {
+    const stored = await this.mapMetadata(artifacts, async (artifact) => {
       signal?.throwIfAborted()
       try {
         const identity = await stat(artifact.path, { bigint: true })
         signal?.throwIfAborted()
         listed.add(artifact.header.id)
-        snapshots.push({
+        return {
           header: artifact.header,
           revision: artifact.sourceVersion < SESSION_FORMAT_VERSION
             ? SessionPersistenceRevision(`${fileRevision(identity)}:${corpusRevision}`)
             : fileRevision(identity),
           sizeBytes: Number(identity.size),
-        })
+        }
       } catch (error: unknown) {
         signal?.throwIfAborted()
         if (!isENOENT(error)) throw error
       }
-    }
+    }, signal)
+    snapshots.push(...stored.filter(snapshot => snapshot !== undefined))
     for (const [id, entry] of pending) {
       if (!listed.has(id)) snapshots.push({ header: entry.header, revision: entry.revision })
     }
@@ -1021,24 +1025,50 @@ class JsonlSessionPersistence extends SessionPersistence {
     }
   }
 
-  /** Enumerate selected physical generations without interpreting their headers or bodies. */
-  private async listGenerations(signal?: AbortSignal): Promise<ResolvedJsonlGeneration[]> {
-    const sources: ResolvedJsonlGeneration[] = []
-    for (const project of await this.listProjectDirs(signal)) {
-      for (const dir of await this.listSessionDirs(project, signal)) {
-        signal?.throwIfAborted()
-        const selected = await this.resolveGenerationInDirectory(dir, signal)
-        if (selected !== undefined) sources.push(selected)
+  /** Run a discovery phase in input order, draining in-flight reads before returning an error. */
+  private async mapMetadata<T, R>(
+    inputs: readonly T[],
+    read: (input: T) => Promise<R>,
+    signal?: AbortSignal,
+  ): Promise<R[]> {
+    const results = new Array<R>(inputs.length)
+    let next = 0
+    let failure: { error: unknown } | undefined
+    const worker = async (): Promise<void> => {
+      while (failure === undefined && next < inputs.length) {
+        const index = next++
+        try {
+          signal?.throwIfAborted()
+          // The index is claimed synchronously while it is within the input length.
+          // oxlint-disable-next-line typescript/no-non-null-assertion
+          results[index] = await read(inputs[index]!)
+        } catch (error) {
+          failure ??= { error }
+        }
       }
     }
-    return sources
+    await Promise.all(Array.from(
+      { length: Math.min(this.config.listConcurrency ?? 16, inputs.length) }, worker,
+    ))
+    if (failure !== undefined) throw failure.error
+    signal?.throwIfAborted()
+    return results
+  }
+
+  /** Enumerate selected physical generations without interpreting their headers or bodies. */
+  private async listGenerations(signal?: AbortSignal): Promise<ResolvedJsonlGeneration[]> {
+    const projects = await this.listProjectDirs(signal)
+    const directories = await this.mapMetadata(projects, project => this.listSessionDirs(project, signal), signal)
+    const sources = await this.mapMetadata(
+      directories.flat(), dir => this.resolveGenerationInDirectory(dir, signal), signal,
+    )
+    return sources.filter(source => source !== undefined)
   }
 
   /** Historical logical events depend on the corpus, including members with unreadable headers. */
   private async historicalCorpusRevision(signal?: AbortSignal): Promise<string> {
     const paths = (await this.listGenerations(signal)).map(source => source.sourcePath).sort()
-    const hash = createHash('sha256')
-    for (const path of paths) {
+    const revisions = await this.mapMetadata(paths, async (path) => {
       signal?.throwIfAborted()
       let revision: string
       try {
@@ -1047,9 +1077,10 @@ class JsonlSessionPersistence extends SessionPersistence {
         if (!isENOENT(error)) throw error
         revision = 'missing'
       }
-      hash.update(JSON.stringify([path, revision]))
-    }
-    signal?.throwIfAborted()
+      return JSON.stringify([path, revision])
+    }, signal)
+    const hash = createHash('sha256')
+    for (const revision of revisions) hash.update(revision)
     return hash.digest('hex')
   }
 
@@ -1061,23 +1092,27 @@ class JsonlSessionPersistence extends SessionPersistence {
     signal?.throwIfAborted()
     const artifacts: Array<{ header: SessionHeader; path: string; sourceVersion: number }> = []
     const ids = new Set<SessionId>()
-    for (const selected of await this.listGenerations(signal)) {
+    const sources = await this.listGenerations(signal)
+    const headers = await this.mapMetadata(sources, async (selected) => {
       signal?.throwIfAborted()
       let header: SessionHeader | undefined
       try {
         header = await this.readGenerationHeader(selected, undefined, signal)
       } catch (error: unknown) {
-        if (error instanceof SessionFormatUnsupportedError || error instanceof SessionPersistenceCorruptionError) continue
+        if (error instanceof SessionFormatUnsupportedError || error instanceof SessionPersistenceCorruptionError) return undefined
         throw error
       }
-      if (header === undefined) {
-        continue
-      }
+      return header === undefined ? undefined
+        : { header, path: selected.sourcePath, sourceVersion: selected.sourceVersion }
+    }, signal)
+    for (const artifact of headers) {
+      if (artifact === undefined) continue
+      const { header } = artifact
       if (ids.has(header.id)) {
         throw new Error(`duplicate JSONL session id "${header.id}" appears in multiple project directories`)
       }
       ids.add(header.id)
-      artifacts.push({ header, path: selected.sourcePath, sourceVersion: selected.sourceVersion })
+      artifacts.push(artifact)
     }
     signal?.throwIfAborted()
     return artifacts
@@ -1610,12 +1645,12 @@ class JsonlSessionPersistence extends SessionPersistence {
   }
 
   private async checkRootEncoding(): Promise<void> {
-    for (const project of await this.listProjectDirs()) {
-      for (const dir of await this.listSessionDirs(project)) {
-        const incompatible = await this.findOppositeGenerationInDirectory(dir)
-        if (incompatible !== undefined) throw this.encodingMismatch(incompatible)
-      }
-    }
+    const projects = await this.listProjectDirs()
+    const directories = await this.mapMetadata(projects, project => this.listSessionDirs(project))
+    await this.mapMetadata(directories.flat(), async (dir) => {
+      const incompatible = await this.findOppositeGenerationInDirectory(dir)
+      if (incompatible !== undefined) throw this.encodingMismatch(incompatible)
+    })
   }
 
   private async rejectLegacyFlatArtifact(

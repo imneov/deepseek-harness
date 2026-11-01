@@ -46,6 +46,9 @@ Choose this backend when consumers benefit from one artifact per session — nav
 |---|---|---|
 | `root` | required | Root directory for all session files |
 | `compression` | `'zstd'` | Physical encoding: `'zstd'` checksummed frames, or `'none'` newline-delimited UTF-8 text |
+| `listConcurrency` | `16` | Positive integer limiting concurrent metadata reads in each discovery phase |
+
+Metadata discovery uses bounded concurrency for directories, headers, and file revisions, preserving discovery order. On failure or cancellation, it stops scheduling new reads and waits for in-flight reads to close before rejecting. Each call rescans storage; it does not cache list results.
 
 Live-event write batching is not configuration: the batching window is the seam's internal scheduling policy inside each write handle.
 
