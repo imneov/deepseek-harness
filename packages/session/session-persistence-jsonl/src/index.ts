@@ -172,6 +172,22 @@ interface ResolvedJsonlGeneration {
   readonly currentPath: string
 }
 
+/** One selected file's physical metadata, retained even when its header is unreadable. */
+interface JsonlMetadataObservation {
+  readonly selected: ResolvedJsonlGeneration
+  readonly revision: PersistenceRevision | undefined
+  readonly sizeBytes: number | undefined
+}
+
+/** A readable selected artifact with its discovery-time physical metadata. */
+interface JsonlListedArtifact {
+  readonly header: SessionHeader
+  readonly path: string
+  readonly sourceVersion: number
+  readonly revision: PersistenceRevision
+  readonly sizeBytes: number
+}
+
 /** One backend-owned historical preparation shared by its current callers. */
 interface MigrationPreparation {
   readonly sourcePath: string
@@ -269,6 +285,9 @@ class JsonlSessionPersistence extends SessionPersistence {
   private readonly coldLogMemo = new Map<SessionId, StoredLog>()
   /** One joinable decode/migration operation per selected historical Session file revision. */
   private readonly migrationPreparations = new Map<SessionId, MigrationPreparation>()
+
+  /** Stable validated headers; every discovery still probes the selected physical revision. */
+  private readonly headerMemo = new Map<string, { revision: PersistenceRevision; header: SessionHeader }>()
 
   constructor(ctx: Context, public config: Config) {
     super(ctx)
@@ -483,28 +502,20 @@ class JsonlSessionPersistence extends SessionPersistence {
     // append lands mid-scan is then still in this snapshot (its artifact may
     // predate the scan), so create-to-list visibility never has a hole.
     const pending = [...this.tracker.pendingEntries()]
-    const artifacts = await this.listArtifacts(signal)
+    const observations = await this.listMetadataSnapshot(signal)
+    const artifacts = await this.listArtifacts(signal, observations)
     const corpusRevision = artifacts.some(artifact => artifact.sourceVersion < SESSION_FORMAT_VERSION)
-      ? await this.historicalCorpusRevision(signal) : undefined
-    const stored = await this.mapMetadata(artifacts, async (artifact) => {
-      signal?.throwIfAborted()
-      try {
-        const identity = await stat(artifact.path, { bigint: true })
-        signal?.throwIfAborted()
-        listed.add(artifact.header.id)
-        return {
-          header: artifact.header,
-          revision: artifact.sourceVersion < SESSION_FORMAT_VERSION
-            ? SessionPersistenceRevision(`${fileRevision(identity)}:${corpusRevision}`)
-            : fileRevision(identity),
-          sizeBytes: Number(identity.size),
-        }
-      } catch (error: unknown) {
-        signal?.throwIfAborted()
-        if (!isENOENT(error)) throw error
-      }
-    }, signal)
-    snapshots.push(...stored.filter(snapshot => snapshot !== undefined))
+      ? await this.historicalCorpusRevision(signal, observations) : undefined
+    for (const artifact of artifacts) {
+      listed.add(artifact.header.id)
+      snapshots.push({
+        header: artifact.header,
+        revision: artifact.sourceVersion < SESSION_FORMAT_VERSION
+          ? SessionPersistenceRevision(`${artifact.revision}:${corpusRevision}`)
+          : artifact.revision,
+        sizeBytes: artifact.sizeBytes,
+      })
+    }
     for (const [id, entry] of pending) {
       if (!listed.has(id)) snapshots.push({ header: entry.header, revision: entry.revision })
     }
@@ -1065,20 +1076,39 @@ class JsonlSessionPersistence extends SessionPersistence {
     return sources.filter(source => source !== undefined)
   }
 
-  /** Historical logical events depend on the corpus, including members with unreadable headers. */
-  private async historicalCorpusRevision(signal?: AbortSignal): Promise<string> {
-    const paths = (await this.listGenerations(signal)).map(source => source.sourcePath).sort()
-    const revisions = await this.mapMetadata(paths, async (path) => {
-      signal?.throwIfAborted()
-      let revision: string
+  /** Enumerate and stat every selected member once, including unreadable headers. */
+  private async listMetadataSnapshot(signal?: AbortSignal): Promise<JsonlMetadataObservation[]> {
+    signal?.throwIfAborted()
+    await this.ensureRootEncoding()
+    const sources = await this.listGenerations(signal)
+    const selectedPaths = new Set(sources.map(source => source.sourcePath))
+    for (const path of this.headerMemo.keys()) {
+      if (!selectedPaths.has(path)) this.headerMemo.delete(path)
+    }
+    return this.mapMetadata(sources, async (selected) => {
       try {
-        revision = fileRevision(await stat(path, { bigint: true }))
+        const identity = await stat(selected.sourcePath, { bigint: true })
+        signal?.throwIfAborted()
+        return { selected, revision: fileRevision(identity), sizeBytes: Number(identity.size) }
       } catch (error: unknown) {
+        signal?.throwIfAborted()
         if (!isENOENT(error)) throw error
-        revision = 'missing'
+        this.headerMemo.delete(selected.sourcePath)
+        return { selected, revision: undefined, sizeBytes: undefined }
       }
-      return JSON.stringify([path, revision])
     }, signal)
+  }
+
+  /** Historical logical events depend on the corpus, including members with unreadable headers. */
+  private async historicalCorpusRevision(
+    signal?: AbortSignal,
+    observations?: readonly JsonlMetadataObservation[],
+  ): Promise<string> {
+    const metadata = observations ?? await this.listMetadataSnapshot(signal)
+    const revisions = [...metadata]
+      .sort((a, b) => a.selected.sourcePath < b.selected.sourcePath ? -1
+        : a.selected.sourcePath > b.selected.sourcePath ? 1 : 0)
+      .map(member => JSON.stringify([member.selected.sourcePath, member.revision ?? 'missing']))
     const hash = createHash('sha256')
     for (const revision of revisions) hash.update(revision)
     return hash.digest('hex')
@@ -1086,24 +1116,41 @@ class JsonlSessionPersistence extends SessionPersistence {
 
   private async listArtifacts(
     signal?: AbortSignal,
-  ): Promise<Array<{ header: SessionHeader; path: string; sourceVersion: number }>> {
+    observations?: readonly JsonlMetadataObservation[],
+  ): Promise<JsonlListedArtifact[]> {
     signal?.throwIfAborted()
     await this.ensureRootEncoding()
     signal?.throwIfAborted()
-    const artifacts: Array<{ header: SessionHeader; path: string; sourceVersion: number }> = []
+    const artifacts: JsonlListedArtifact[] = []
     const ids = new Set<SessionId>()
-    const sources = await this.listGenerations(signal)
-    const headers = await this.mapMetadata(sources, async (selected) => {
+    const metadata = observations ?? await this.listMetadataSnapshot(signal)
+    const headers = await this.mapMetadata(metadata, async (member) => {
+      const { selected } = member
       signal?.throwIfAborted()
+      if (member.revision === undefined || member.sizeBytes === undefined) return undefined
+      const cached = this.headerMemo.get(selected.sourcePath)
       let header: SessionHeader | undefined
-      try {
-        header = await this.readGenerationHeader(selected, undefined, signal)
-      } catch (error: unknown) {
-        if (error instanceof SessionFormatUnsupportedError || error instanceof SessionPersistenceCorruptionError) return undefined
-        throw error
+      if (cached?.revision === member.revision) {
+        header = structuredClone(cached.header)
+      } else {
+        this.headerMemo.delete(selected.sourcePath)
+        try {
+          header = await this.readGenerationHeader(selected, undefined, signal)
+          if (header === undefined) return undefined
+          const after = await stat(selected.sourcePath, { bigint: true })
+          signal?.throwIfAborted()
+          if (fileRevision(after) === member.revision) {
+            this.headerMemo.set(selected.sourcePath, { revision: member.revision, header: structuredClone(header) })
+          }
+        } catch (error: unknown) {
+          signal?.throwIfAborted()
+          if (isENOENT(error) || error instanceof SessionFormatUnsupportedError
+            || error instanceof SessionPersistenceCorruptionError) return undefined
+          throw error
+        }
       }
-      return header === undefined ? undefined
-        : { header, path: selected.sourcePath, sourceVersion: selected.sourceVersion }
+      return { header, path: selected.sourcePath, sourceVersion: selected.sourceVersion,
+        revision: member.revision, sizeBytes: member.sizeBytes }
     }, signal)
     for (const artifact of headers) {
       if (artifact === undefined) continue
