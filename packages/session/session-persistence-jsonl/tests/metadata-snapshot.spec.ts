@@ -62,7 +62,7 @@ it('rescans once and reuses only detached headers from equal physical revisions'
   const cold = await ctx.sessionPersistence.list()
   expect(probes.reads).toBe(1)
   probes.scans = probes.stats = 0
-  cold[0]!.header.agentPreset = 'caller mutation'
+  Object.assign(cold[0]!.header, { agentPreset: 'caller mutation' })
   const warm = await ctx.sessionPersistence.list()
   expect(warm[0]!.header.agentPreset).toBe('first')
   expect(probes.reads).toBe(1)
