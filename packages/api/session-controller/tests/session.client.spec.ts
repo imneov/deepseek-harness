@@ -182,16 +182,18 @@ describe('live event path', () => {
 })
 
 describe('paging', () => {
-  it('prepends an older page and keeps seq continuity', async ({ mock, start }) => {
+  it('opens one Turn, then prepends an ordinary older page without losing history', async ({ mock, start }) => {
     const older = plainTurn(SessionSeq(0), 0, '旧问', '旧答')
     const newer = plainTurn(SessionSeq(6), 1, '新问', '新答')
     const session = await sessionBench(mock, start, SID)
     mock.stream(FOLLOW, followScript(history(newer, true)))
     mock.remote.session.page.mockImplementation(pageRule(history(older)))
     await session.open()
+    expect(session.getSnapshot().hasMore).toBe(true)
+    expect(eventSeqs(session)).toEqual(newer.map(event => event.seq))
     await session.loadOlder()
     const snapshot = session.getSnapshot()
-    expect(mock.log.requests(FOLLOW)).toMatchObject([{ maxMessages: 500, turnWindow: { minMessages: 50, minTurns: 2 } }])
+    expect(mock.log.requests(FOLLOW)).toMatchObject([{ maxMessages: 500, turnWindow: { minMessages: 1, minTurns: 1 } }])
     expect(mock.log.requests(PAGE)).toEqual([
       { address: ADDRESS, throughSeq: 11, beforeSeq: 6, maxMessages: 500, turnWindow: { minMessages: 50, minTurns: 2 } },
     ])
@@ -484,7 +486,7 @@ describe('prompt and cancel errors', () => {
     expect(steered).toEqual({ ok: true, value: { accepted: true } })
     expect(cancelled).toEqual({ ok: true, value: { accepted: true } })
     expect(mock.log.requests(FOLLOW)).toEqual([
-      { address: { kind: 'subagent', ...CHILD }, assistantStream: true, maxMessages: 500, turnWindow: { minMessages: 50, minTurns: 2 } },
+      { address: { kind: 'subagent', ...CHILD }, assistantStream: true, maxMessages: 500, turnWindow: { minMessages: 1, minTurns: 1 } },
     ])
     expect(mock.log.requests(PAGE)).toEqual([])
     // The prompt mode crosses the wire as the request's delivery.
@@ -580,7 +582,7 @@ describe('prompt and cancel errors', () => {
     expect(mock.log.requests('subagents/prompt')).toMatchObject([CHILD])
     expect(mock.log.calls('subagents/interruptByParent').map(call => call.args)).toEqual([[SID, PARENT, 'continuable']])
     expect(mock.log.requests(FOLLOW)).toEqual([
-      { address: { kind: 'subagent', ...CHILD, mode: 'one-shot' }, assistantStream: true, maxMessages: 500, turnWindow: { minMessages: 50, minTurns: 2 } },
+      { address: { kind: 'subagent', ...CHILD, mode: 'one-shot' }, assistantStream: true, maxMessages: 500, turnWindow: { minMessages: 1, minTurns: 1 } },
     ])
     expect(mock.log.requests(PAGE)).toEqual([])
     expect(mock.log.requests('session/cancel')).toEqual([])
@@ -989,6 +991,10 @@ describe('resync', () => {
     expect(snapshot.openState).toBe('open')
     expect(snapshot.running).toBe(true)
     expect(snapshot.lastAgentError).toBe('still visible')
+    expect(mock.log.requests(FOLLOW)).toMatchObject([
+      { maxMessages: 500, turnWindow: { minMessages: 1, minTurns: 1 } },
+      { maxMessages: 500, turnWindow: { minMessages: 1, minTurns: 1 } },
+    ])
     expect(eventSeqs(session)).toHaveLength(12)
 
   })

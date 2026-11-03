@@ -749,6 +749,9 @@ describe('Session history raw journal', () => {
   })
 
   it.each([
+    { name: 'only the latest short Turn on opening', replies: [9, 2], beforeMessage: undefined, firstTurn: 2, steering: false, minMessages: 1, minTurns: 1 },
+    { name: 'the complete latest long Turn on opening', replies: [9, 99], beforeMessage: undefined, firstTurn: 2, steering: false, minMessages: 1, minTurns: 1 },
+    { name: 'the latest nonempty Turn beneath an empty tail', replies: [9, 2], beforeMessage: undefined, firstTurn: 2, steering: false, minMessages: 1, minTurns: 1, emptyTail: true },
     { name: 'two long Turns', replies: [9, 39, 39], beforeMessage: undefined, firstTurn: 2, steering: false },
     { name: 'the partial upper Turn and its predecessor', replies: [9, 39, 99], beforeMessage: 20, firstTurn: 2, steering: false },
     { name: 'an upper window beginning at its user message', replies: [9, 59, 59], beforeMessage: 0, firstTurn: 2, steering: false },
@@ -757,7 +760,7 @@ describe('Session history raw journal', () => {
     { name: 'steering within one Turn', replies: [9, 39, 39], beforeMessage: undefined, firstTurn: 2, steering: true },
     { name: 'exhausted history below both minima', replies: [9], beforeMessage: undefined, firstTurn: 1, steering: false },
     { name: 'the 500-message cap inside one Turn', replies: [9, 600], beforeMessage: undefined, firstTurn: undefined, steering: false },
-  ])('paginates $name in one contiguous Turn window', async ({ replies, beforeMessage, firstTurn, steering, minMessages = 50 }) => {
+  ])('paginates $name in one contiguous Turn window', async ({ replies, beforeMessage, firstTurn, steering, minMessages = 50, minTurns = 2, emptyTail = false }) => {
     const { ctx } = await harness()
     onTestFinished(() => ctx.fiber.dispose())
     const remote = createSessionTestRemote(ctx, { defaultModelSelection: () => ({ provider: 'p', model: 'm' }), cwd: '/tmp' })
@@ -777,13 +780,17 @@ describe('Session history raw journal', () => {
       messages.push(rows)
       session.append('turn/end', { turn, reason: { kind: 'completed' } })
     }
+    if (emptyTail) {
+      session.append('turn/start', { turn: replies.length + 1 })
+      session.append('turn/end', { turn: replies.length + 1, reason: { kind: 'completed' } })
+    }
     const beforeSeq = beforeMessage === undefined ? session.seq : messages.at(-1)![beforeMessage]!.seq
     const response = await remote.page({
       address: { kind: 'session', sessionId: session.id },
       throughSeq: session.seq - 1,
       beforeSeq,
       maxMessages: 500,
-      turnWindow: { minMessages, minTurns: 2 },
+      turnWindow: { minMessages, minTurns },
     })
     if (!response.ok) throw new Error('expected a history page')
     const page = pageEvents(response.value)
@@ -802,7 +809,7 @@ describe('Session history raw journal', () => {
       const stream = remote.follow({
         address: { kind: 'session', sessionId: session.id },
         maxMessages: 500,
-        turnWindow: { minMessages, minTurns: 2 },
+        turnWindow: { minMessages, minTurns },
       }, abort.signal)[Symbol.asyncIterator]()
       try {
         await expect(stream.next()).resolves.toMatchObject({
