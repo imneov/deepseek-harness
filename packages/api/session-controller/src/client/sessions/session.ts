@@ -390,7 +390,8 @@ export class Session implements SessionFace {
     return { ok: true, value: { matched: result.value !== undefined } }
   }
 
-  /** First open: pull the tail page (idempotent — in-flight/already-open returns the existing promise). */
+  /** First open: pull the latest nonempty Turn under the history cap.
+   * Idempotent: in-flight/already-open returns the existing promise. */
   open(): Promise<void> {
     if (this.openState === 'open') return Promise.resolve()
     if (this.openPromise !== null) return this.openPromise
@@ -628,7 +629,7 @@ export class Session implements SessionFace {
     })
     this.events = events
     try {
-      await events.open(HISTORY_PAGE_OPTIONS)
+      await events.open({ ...HISTORY_PAGE_OPTIONS, turnWindow: { minMessages: 1, minTurns: 1 } })
       if (generation !== this.openGeneration || this.events !== events) return
       this.openState = 'open'
     } catch (error) {
