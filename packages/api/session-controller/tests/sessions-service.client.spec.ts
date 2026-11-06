@@ -58,13 +58,14 @@ type FeedRow = {
   parentId?: string
   origin?: 'subagent'
   running?: boolean
+  agentAvailable?: boolean
   blank?: boolean
   projections?: import('../src/types.ts').SessionProjectionValues
 }
 
 async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
   b.mock.remote.session.list.mockResolvedValue(ok({
-    items: rows.map(r => ({ agentAvailable: true,
+    items: rows.map(r => ({ agentAvailable: r.agentAvailable ?? true,
       sessionId: sid(r.id), updatedAt: 1, running: r.running ?? false, blank: r.blank ?? false,
       ...(r.cwd !== undefined ? { cwd: r.cwd } : {}),
       ...(r.parentId !== undefined ? { parentSessionId: sid(r.parentId) } : {}),
@@ -102,15 +103,12 @@ describe('list store projection', () => {
     await feedList(b, [{ id: 's1', cwd: '/workspace', projections: {
       title: 'Durable title', sessionListMetadata: { blank: false, lastPromptAt: 1200 },
     } }])
-    b.svc.handleSessionAdded({
-      sessionId: sid('s1'), updatedAt: 1200, agentAvailable: false, running: false, blank: false,
-      cwd: '/workspace',
-    })
+    b.svc.handleSessionRemoved(sid('s1'))
     await Promise.resolve()
     expect(b.svc.list.getSnapshot().byId[sid('s1')]).toMatchObject({
       title: 'Durable title', updatedAt: 1200, running: false,
     })
-    await feedList(b, [{ id: 's1', cwd: '/workspace' }])
+    await feedList(b, [{ id: 's1', cwd: '/workspace', agentAvailable: false }])
     expect(b.svc.list.getSnapshot().byId[sid('s1')]).toMatchObject({ title: 'Durable title', updatedAt: 1200 })
     b.svc.handleSessionAdded({
       sessionId: sid('s1'), updatedAt: 1200, agentAvailable: true, running: false, blank: false,
@@ -1020,7 +1018,7 @@ describe('fork', () => {
 })
 
 describe('catalog arrival', () => {
-  it('keeps a retained binding alive without a catalog row after Host removal', async ({ bench }) => {
+  it('keeps a retained binding and catalog row after runtime removal until a list refresh omits it', async ({ bench }) => {
     const b = bench()
     b.svc.handleSessionAdded({ agentAvailable: true, sessionId: sid('s-new'), updatedAt: 1, running: false, blank: true })
     await Promise.resolve()
@@ -1028,8 +1026,14 @@ describe('catalog arrival', () => {
     const reference = b.svc.retain(sid('s-new'), { source: 'controllerOperation' })
     await reference.ready
     const binding = reference.binding
+    b.svc.handleSessionStatus(sid('s-new'), true)
+    await Promise.resolve()
+    expect(binding.session.getSnapshot().running).toBe(true)
     b.svc.handleSessionRemoved(sid('s-new'))
     await Promise.resolve()
+    expect(b.svc.list.getSnapshot().ids).toContain(sid('s-new'))
+    expect(binding.session.getSnapshot().running).toBe(false)
+    await feedList(b, [])
     expect(b.svc.list.getSnapshot().ids).not.toContain(sid('s-new'))
     expect(b.svc.list.getSnapshot().byId[sid('s-new')]).toBeUndefined()
     expect(b.svc.retainInfo(sid('s-new')).getSnapshot().referenceCount).toBe(1)

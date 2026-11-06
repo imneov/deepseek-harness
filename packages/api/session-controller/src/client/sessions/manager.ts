@@ -671,19 +671,19 @@ export class SessionManager {
   }
 
   /**
-   * Apply one Session removal forwarded through `ctx.remote.$on`.
-   * @param sessionId - removed Session identity.
+   * Apply one runtime Session departure forwarded through `ctx.remote.$on`.
+   * @param sessionId - Session identity no longer attached on the Host.
    */
   handleSessionRemoved(sessionId: SessionId): void {
-    const durableSubagent = this.subagentAddress(sessionId) !== undefined
-      || this.summaries.some(summary => summary.sessionId === sessionId && summary.origin === 'subagent')
-    this.recordMutation(durableSubagent
+    const retainRow = this.subagentAddress(sessionId) !== undefined
+      || this.summaries.some(summary => summary.sessionId === sessionId)
+    this.recordMutation(retainRow
       ? { kind: 'status', sessionId, running: false, agentAvailable: false }
       : { kind: 'remove', sessionId })
-    if (durableSubagent) this.sessions.get(sessionId)?.handleRunning(false)
+    if (retainRow) this.sessions.get(sessionId)?.handleRunning(false)
     else this.sessions.get(sessionId)?.handleRemoved()
     const catalog = this.projectionStores.get(sessionId)?.values().subagentCatalog
-    if (!durableSubagent && (catalog === undefined || catalog.length === 0)) {
+    if (!retainRow && (catalog === undefined || catalog.length === 0)) {
       this.projectionStores.delete(sessionId)
     }
     this.pruneEngagement(sessionId, this.retainedIds(this.summaries))

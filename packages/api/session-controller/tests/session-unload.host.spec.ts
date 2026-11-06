@@ -1,9 +1,10 @@
-/** Runtime disposal updates availability without deleting durable Session rows. */
+/** Runtime disposal leaves durable Session catalog membership authoritative. */
 import { Context } from '@deepseek-ai/cordis'
 import { mountAgentLoopTestDependencies, mountAgentLoopTestHarness } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { SessionId, type SessionHeader } from '@deepseek-ai/dsh-session'
 import { titleProjectionDefinition } from '@deepseek-ai/dsh-session-title'
 import { describe, expect, it, vi } from 'vitest'
+import type { SessionSummary } from '../src/types.ts'
 import { createSessionTestRemote, testSessionPersistence } from './test-remote.ts'
 
 describe('Session runtime unloading', () => {
@@ -16,14 +17,14 @@ describe('Session runtime unloading', () => {
       const remote = createSessionTestRemote(ctx, {
         defaultModelSelection: () => ({ provider: 'p', model: 'm' }), cwd: '/workspace',
       })
-      const added = vi.fn()
+      const added = vi.fn<(summary: SessionSummary) => void>()
       const removed = vi.fn()
       ctx.on('api-session/added', added)
       ctx.on('api-session/removed', removed)
       const stored: SessionHeader[] = []
       ctx.on('session/created', (session) => {
         stored.push(session.header)
-        session.append('session/title', { title: 'Durable conversation' })
+        session.append('session/title', { title: 'Durable conversation', messageSeqs: [], source: { kind: 'user' } })
       })
       const removeFailure = ctx.on('agent/created', () => {
         if (failInitialization) throw new Error('initialization failed')
@@ -37,11 +38,11 @@ describe('Session runtime unloading', () => {
         await owned.dispose()
       }
       expect(ctx.sessions.get(id)).toBeUndefined()
-      expect(removed).not.toHaveBeenCalled()
-      expect(added).toHaveBeenLastCalledWith(expect.objectContaining({
+      expect(removed).toHaveBeenCalledExactlyOnceWith(id)
+      expect(added.mock.calls.at(-1)?.[0]).toMatchObject({
         sessionId: id, agentAvailable: false, running: false,
-        projections: expect.objectContaining({ values: expect.objectContaining({ title: 'Durable conversation' }) }),
-      }))
+        projections: { values: { title: 'Durable conversation' } },
+      })
       ctx.provide('sessionPersistence', testSessionPersistence(ctx, {
         list: () => Promise.resolve(stored),
       }) as never)
