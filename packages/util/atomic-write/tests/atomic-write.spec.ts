@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { withFileLock, writeFileAtomic } from '../src/index.ts'
 
 const state = vi.hoisted(() => ({
+  failPidWrite: false,
   afterClaim: undefined as ((claim: string) => Promise<void>) | undefined,
   claimFailure: undefined as string | undefined,
   claimRemovalFails: false,
@@ -22,6 +23,21 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...actual,
+    open: (async (...args: Parameters<typeof actual.open>) => {
+      const path = args[0]
+      if (state.lockPermissionFailures > 0 && String(path).endsWith('.lock')) {
+        state.lockPermissionFailures -= 1
+        if (state.releaseLockBeforeProbe) await actual.rm(String(path))
+        throw Object.assign(new Error('EPERM: injected exclusive-create failure'), { code: 'EPERM' })
+      }
+      const handle = await actual.open(...args)
+      if (state.failPidWrite && String(path).endsWith('.lock')) {
+        vi.spyOn(handle, 'writeFile').mockRejectedValueOnce(
+          Object.assign(new Error('ENOSPC: injected PID write failure'), { code: 'ENOSPC' }),
+        )
+      }
+      return handle
+    }),
     rename: (async (...args: Parameters<typeof actual.rename>) => {
       state.renameAttempts += 1
       const code = state.renameFailures.shift()
@@ -49,11 +65,6 @@ vi.mock('node:fs/promises', async (importOriginal) => {
         await state.afterClaim?.(String(path))
         return
       }
-      if (state.lockPermissionFailures > 0 && String(path).endsWith('.lock')) {
-        state.lockPermissionFailures -= 1
-        if (state.releaseLockBeforeProbe) await actual.rm(String(path))
-        throw Object.assign(new Error('EPERM: injected exclusive-create failure'), { code: 'EPERM' })
-      }
       return (actual.writeFile as (path: unknown, ...args: never[]) => Promise<void>)(path, ...rest)
     }) as typeof actual.writeFile,
   }
@@ -64,6 +75,7 @@ const scratchDirs: string[] = []
 afterEach(async () => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  state.failPidWrite = false
   state.afterClaim = undefined
   state.claimFailure = undefined
   state.claimRemovalFails = false
@@ -450,6 +462,22 @@ describe('withFileLock', () => {
     state.claimRemovalFails = true
 
     await expect(withFileLock(target, async () => 'acquired', { waitMs: 0 })).resolves.toBe('acquired')
+  })
+
+  it('releases a newly created lock when writing its PID fails, without touching another writer', async () => {
+    const dir = await scratch()
+    const target = join(dir, 'document')
+    const operation = vi.fn(async () => 'acquired')
+    state.failPidWrite = true
+    await expect(withFileLock(target, operation)).rejects.toThrow('injected PID write failure')
+    expect(operation).not.toHaveBeenCalled()
+    expect(await readdir(dir)).toEqual([])
+    state.failPidWrite = false
+    await expect(withFileLock(target, operation)).resolves.toBe('acquired')
+    await writeFile(`${target}.lock`, `${process.pid}\n`)
+    await expect(withFileLock(target, operation, { waitMs: 0 })).rejects.toThrow('timed out')
+    expect(await readFile(`${target}.lock`, 'utf8')).toBe(`${process.pid}\n`)
+    expect(operation).toHaveBeenCalledTimes(1)
   })
 
   it('waits for the caller-stated limit rather than the protocol default', async () => {

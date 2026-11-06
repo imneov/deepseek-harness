@@ -97,6 +97,31 @@ describe('list store projection', () => {
     expect(state.byId[sid('s2')]?.title).toBeUndefined()
   }, COLD_BOOT_TIMEOUT_MS)
 
+  it('preserves known title and activity through unload, cold refresh, and reload, then removes a deleted row', async ({ bench }) => {
+    const b = bench()
+    await feedList(b, [{ id: 's1', cwd: '/workspace', projections: {
+      title: 'Durable title', sessionListMetadata: { blank: false, lastPromptAt: 1200 },
+    } }])
+    b.svc.handleSessionAdded({
+      sessionId: sid('s1'), updatedAt: 1200, agentAvailable: false, running: false, blank: false,
+      cwd: '/workspace',
+    })
+    await Promise.resolve()
+    expect(b.svc.list.getSnapshot().byId[sid('s1')]).toMatchObject({
+      title: 'Durable title', updatedAt: 1200, running: false,
+    })
+    await feedList(b, [{ id: 's1', cwd: '/workspace' }])
+    expect(b.svc.list.getSnapshot().byId[sid('s1')]).toMatchObject({ title: 'Durable title', updatedAt: 1200 })
+    b.svc.handleSessionAdded({
+      sessionId: sid('s1'), updatedAt: 1200, agentAvailable: true, running: false, blank: false,
+      cwd: '/workspace',
+    })
+    await Promise.resolve()
+    expect(b.svc.list.getSnapshot().byId[sid('s1')]).toMatchObject({ title: 'Durable title', updatedAt: 1200 })
+    await feedList(b, [])
+    expect(b.svc.list.getSnapshot().ids).not.toContain(sid('s1'))
+  })
+
   it('reprojects a blank session from the generic agent-preset projection', async ({ bench }) => {
     const b = bench()
     await feedList(b, [{ id: 's1', blank: true, projections: { agentPreset: 'standard' } }])

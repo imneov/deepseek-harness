@@ -12,7 +12,7 @@
  */
 
 import { createHash, randomBytes } from 'node:crypto'
-import { lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 const WINDOWS_TRANSIENT_RENAME_ERRORS: ReadonlySet<string> = new Set(['EACCES', 'EBUSY', 'EPERM'])
@@ -226,7 +226,8 @@ export interface FileLockOptions {
  * writers must stop them with it or leave its successor a way to find them.
  * PIDs are compared on the contender's host, so writers on other hosts or in
  * other PID namespaces sharing the file are unsupported and could both hold
- * the lock. The parent directory must exist.
+ * the lock. A failed PID write releases the file created by this acquisition.
+ * The parent directory must exist.
  * @param filename - the file whose writers this lock serializes.
  * @param operation - the read-render-commit cycle to run while holding the lock.
  * @param options - acquisition options; omitted waits {@link DEFAULT_LOCK_WAIT_MS}.
@@ -241,9 +242,10 @@ export async function withFileLock<T>(
   const deadline = Date.now() + (options?.waitMs ?? DEFAULT_LOCK_WAIT_MS)
   let delay = LOCK_RETRY_INITIAL_MS
   let retriedUnconfirmedPermissionError = false
+  let lockFile: Awaited<ReturnType<typeof open>>
   for (;;) {
     try {
-      await writeFile(lockPath, `${process.pid}\n`, { mode: 0o600, flag: 'wx' })
+      lockFile = await open(lockPath, 'wx', 0o600)
       break
     } catch (error) {
       if (!await isLockContention(error, lockPath)) {
@@ -261,8 +263,10 @@ export async function withFileLock<T>(
     delay = Math.min(delay * 2, LOCK_RETRY_MAX_MS)
   }
   try {
+    await lockFile.writeFile(`${process.pid}\n`)
     return await operation()
   } finally {
+    await lockFile.close()
     await rm(lockPath, { force: true })
   }
 }
