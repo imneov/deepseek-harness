@@ -578,9 +578,13 @@ export class Session implements SessionFace {
     this.notifier.markDirty()
   }
 
-  /** `api-session/removed` relay: flag the snapshot while retaining the resident instance. */
-  handleRemoved(): void {
-    this.removed = true
+  /**
+   * Update Host runtime availability while retaining the resident instance.
+   * @param removed - whether the Host runtime disappeared; false after proven availability.
+   */
+  handleRemoved(removed = true): void {
+    if (this.removed === removed) return
+    this.removed = removed
     this.notifier.markDirty()
   }
 
